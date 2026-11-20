@@ -46,7 +46,9 @@ Reihenfolge an, eine oder zwei falsche Silben sind beigemischt. Danach liest das
 
 Die App sagt nichts von selbst vor. „💡 Tipp“ hilft zuerst ohne Ton, erst beim zweiten Tippen mit
 Vorlesen. **Zum nächsten Wort geht es nur, wenn die Spracherkennung das ganze Wort richtig gehört hat.**
-Es gibt keinen Bestätigungs-Knopf. Mit „Anderes Wort“ lässt sich ein Wort ohne Stern überspringen.
+Es gibt keinen Bestätigungs- und keinen Überspringen-Knopf. Das gilt in beiden Bereichen.
+Hängt ein Wort fest, weil die Erkennung es nicht versteht, hilft der zweite Tipp (Vorlesen zum
+Nachsprechen). Notfalls können Erwachsene über die Stufen-Auswahl oder den anderen Bereich ein neues Wort holen.
 
 ## Spracherkennung
 
@@ -61,7 +63,7 @@ Es gibt keinen Bestätigungs-Knopf. Mit „Anderes Wort“ lässt sich ein Wort 
 
 - Wörter: `LEVELS` oben in `public/index.html`, Silben mit `-` getrennt, z. B. `['Ba-na-ne','🍌']`.
   Neue Silben, die das Modell nicht kennt, in `SYL_ALIAS` eintragen.
-- Nach jeder Änderung in `public/sw.js` die Versionsnummer (`lesen-v2`) erhöhen, damit installierte
+- Nach jeder Änderung in `public/sw.js` die Versionsnummer (`lesen-v3`) erhöhen, damit installierte
   Tablets die neue Fassung holen.
 - `build/` (nicht im Repository) enthält Rohdaten (Modell, Bibliothek) und die alte PC-Version mit
   Whisper (`build/alt-pc-whisper`).

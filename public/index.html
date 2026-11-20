@@ -330,11 +330,10 @@ views.silben = function () {
         ${wordHTML(item, { colors: true, arcs: true, vowels: true, cur: phase === 'syl' ? i : undefined })}
         <div class="emoji" id="pic">❓</div>
         <div class="row" id="mic"></div>
-        <div class="row"><button id="tip">💡 Tipp</button><button id="skip">Anderes Wort</button></div>
+        <div class="row"><button id="tip">💡 Tipp</button></div>
         <div class="hint" id="hint"></div>
         <div class="feedback" id="fb"></div>
       </div>`;
-    $('skip').onclick = next;
     $('tip').onclick = () => {
       hint++; usedHelp = true;
       if (phase === 'syl') {
@@ -401,7 +400,7 @@ views.bauen = function () {
         <div class="emoji">${item.e}</div>
         <div class="slots" id="slots"></div>
         <div class="row" id="chips"></div>
-        <div class="row"><button id="tip">💡 Tipp</button><button id="skip">Anderes Wort</button></div>
+        <div class="row"><button id="tip">💡 Tipp</button></div>
         <div class="hint" id="hint"></div>
         <div class="feedback" id="fb"></div>
         <div class="row" id="mic"></div>
@@ -422,7 +421,6 @@ views.bauen = function () {
       b.onclick = () => place(c);
       $('chips').append(b);
     });
-    $('skip').onclick = next;
     $('tip').onclick = () => {
       hint++; usedHelp = true;
       const free = slots.findIndex(x => !x);
