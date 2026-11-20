@@ -44,8 +44,9 @@ schwingt die Silben dann zum Wort zusammen. Erst danach erscheint das Bild.
 **🧩 Wörter bauen:** Das Bild zeigt das Ziel. Das Kind tippt die passenden Silben in der richtigen
 Reihenfolge an, eine oder zwei falsche Silben sind beigemischt. Danach liest das Kind das Wort vor.
 
-Die App sagt nichts von selbst vor. „💡 Tipp“ hilft zuerst ohne Ton, erst beim zweiten Tippen mit
-Vorlesen. **Zum nächsten Wort geht es nur, wenn die Spracherkennung das ganze Wort richtig gehört hat.**
+Die App sagt nichts von selbst vor. „💡 Tipp“ erscheint erst, nachdem falsch gelesen (oder beim
+Bauen eine falsche Silbe gelegt) wurde, und ist bei jeder neuen Silbe bzw. jedem neuen Wort wieder
+weg. Er hilft zuerst ohne Ton, erst beim zweiten Tippen mit Vorlesen. **Zum nächsten Wort geht es nur, wenn die Spracherkennung das ganze Wort richtig gehört hat.**
 Es gibt keinen Bestätigungs- und keinen Überspringen-Knopf. Das gilt in beiden Bereichen.
 Hängt ein Wort fest, weil die Erkennung es nicht versteht, hilft der zweite Tipp (Vorlesen zum
 Nachsprechen). Notfalls können Erwachsene über die Stufen-Auswahl oder den anderen Bereich ein neues Wort holen.

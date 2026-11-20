@@ -321,8 +321,9 @@ function nextButton(label, onClick) {
 // ================= Silben lesen: Silbe für Silbe, dann zusammenschwingen, dann Bild =================
 const views = {};
 views.silben = function () {
-  let item, i, phase, hint, usedHelp, fails;
-  function next() { item = nextWord(); i = 0; phase = item.s.length > 1 ? 'syl' : 'word'; hint = 0; usedHelp = false; fails = 0; render(); }
+  // missed: Tipp-Knopf erst zeigen, nachdem falsch gelesen wurde (gilt für die aktuelle Silbe bzw. das Wort).
+  let item, i, phase, hint, usedHelp, fails, missed;
+  function next() { item = nextWord(); i = 0; phase = item.s.length > 1 ? 'syl' : 'word'; hint = 0; usedHelp = false; fails = 0; missed = false; render(); }
   function render() {
     const syl = item.s[i];
     const task = phase === 'syl'
@@ -339,7 +340,7 @@ views.silben = function () {
         ${wordHTML(item, { colors: true, arcs: true, vowels: true, cur: phase === 'syl' ? i : undefined })}
         <div class="emoji" id="pic">❓</div>
         <div class="row" id="mic"></div>
-        <div class="row"><button id="tip">💡 Tipp</button></div>
+        <div class="row"><button id="tip"${missed ? '' : ' hidden'}>💡 Tipp</button></div>
         <div class="hint" id="hint"></div>
         <div class="feedback" id="fb"></div>
       </div>`;
@@ -357,6 +358,7 @@ views.silben = function () {
       const ok = !err && (phase === 'syl' ? (heardSyllable(res, syl) || (i === 0 && heardWord(res, item))) : heardWord(res, item));
       if (ok) return success();
       if (err || nothingHeard(res)) return feedback(heardMsg(res, err), err ? 'bad' : 'warn');
+      missed = true; $('tip').hidden = false;   // falsch gelesen → jetzt darf es einen Tipp geben
       if (phase === 'word') return feedback(heardMsg(res) + ' Versuch es nochmal.', 'warn');
       // Einzelne Silben erkennt die Spracherkennung nicht immer sicher: nach zwei Versuchen das ganze Wort lesen lassen.
       // Zum nächsten Wort geht es nur, wenn das ganze Wort richtig erkannt wurde.
@@ -369,7 +371,7 @@ views.silben = function () {
   }
   function success() {
     if (phase === 'syl') {
-      hint = 0; fails = 0;
+      hint = 0; fails = 0; missed = false;
       if (i < item.s.length - 1) { i++; render(); feedback('✅ Gut!', 'ok'); }
       else { phase = 'word'; render(); feedback('✅ Alle Silben gelesen!', 'ok'); }
       return;
@@ -385,7 +387,7 @@ views.silben = function () {
 
 // ================= Wörter bauen: passende Silben antippen, dann das Wort vorlesen =================
 views.bauen = function () {
-  let item, chips, slots, hint, usedHelp;
+  let item, chips, slots, hint, usedHelp, missed;   // missed: Tipp erst nach einem Fehler zeigen
   function distractors() {
     const need = new Set(item.s.map(s => s.toLowerCase()));
     const others = levelWords().filter(w => w !== item);
@@ -397,7 +399,7 @@ views.bauen = function () {
   }
   function next() {
     item = nextWord(w => w.s.length > 1);
-    hint = 0; usedHelp = false;
+    hint = 0; usedHelp = false; missed = false;
     chips = shuffle([...item.s, ...distractors()]).map((s, k) => ({ s, k, used: false }));
     slots = item.s.map(() => null);
     render();
@@ -409,7 +411,7 @@ views.bauen = function () {
         <div class="emoji">${item.e}</div>
         <div class="slots" id="slots"></div>
         <div class="row" id="chips"></div>
-        <div class="row"><button id="tip">💡 Tipp</button></div>
+        <div class="row"><button id="tip"${missed ? '' : ' hidden'}>💡 Tipp</button></div>
         <div class="hint" id="hint"></div>
         <div class="feedback" id="fb"></div>
         <div class="row" id="mic"></div>
@@ -451,6 +453,7 @@ views.bauen = function () {
   function check() {
     const wrong = slots.map((c, k) => c.s !== item.s[k]);
     if (wrong.some(Boolean)) {
+      missed = true; $('tip').hidden = false;
       feedback('Hmm, das passt noch nicht. Lies deine Silben einmal laut – welche ist falsch?', 'warn');
       const els = document.querySelectorAll('.slot');
       wrong.forEach((w, k) => { if (w) els[k].classList.add('wrong'); });
@@ -467,8 +470,9 @@ views.bauen = function () {
     $('chips').remove();
     feedback('✅ Richtig gebaut! Jetzt lies das ganze Wort vor.', 'ok');
     micRow('mic', (res, err) => {
-      if (!err && heardWord(res, item)) done();
-      else feedback(heardMsg(res, err) + (err || nothingHeard(res) ? '' : ' Lies es noch einmal – Silbe für Silbe, dann schneller.'), err ? 'bad' : 'warn');
+      if (!err && heardWord(res, item)) return done();
+      if (!err && !nothingHeard(res)) { missed = true; $('tip').hidden = false; }
+      feedback(heardMsg(res, err) + (err || nothingHeard(res) ? '' : ' Lies es noch einmal – Silbe für Silbe, dann schneller.'), err ? 'bad' : 'warn');
     });
   }
   function done() {
