@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3b82f6">
+<title>Lesen lernen</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="vosk/vosk.js" defer></script>
+<style>
+  :root {
+    --bg: #fdf8f0; --card: #ffffff; --ink: #2b2b2b; --muted: #6b6b6b; --line: #e5e0d6;
+    --accent: #3b82f6; --ok: #16a34a; --bad: #dc2626; --warn: #d97706;
+    --syl0: #1d4ed8; --syl1: #dc2626; --vowel: #fde68a; --cur: #e0f2fe; --slot: #f3efe6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b1d22; --card: #262a31; --ink: #f1f1f1; --muted: #a3a3a3; --line: #3a3f48;
+      --syl0: #60a5fa; --syl1: #f87171; --vowel: #713f12; --cur: #0c4a6e; --slot: #1f2329;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b1d22; --card: #262a31; --ink: #f1f1f1; --muted: #a3a3a3; --line: #3a3f48;
+    --syl0: #60a5fa; --syl1: #f87171; --vowel: #713f12; --cur: #0c4a6e; --slot: #1f2329;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { touch-action: manipulation; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--ink); user-select: none; -webkit-user-select: none; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; flex-wrap: wrap; gap: 8px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 0; }
+  .top { display: flex; gap: 10px; align-items: center; font-size: 1.2rem; }
+  select { font: inherit; font-size: 1rem; padding: 10px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); }
+  nav { display: flex; gap: 10px; padding: 0 16px 8px; max-width: 900px; margin: 0 auto; }
+  nav button { flex: 1; font-size: 1.3rem; }
+  #engine { padding: 0 16px 10px; font-size: .9rem; color: var(--muted); max-width: 900px; margin: 0 auto; }
+  #engine:empty { display: none; }
+  main { padding: 0 16px 32px; max-width: 900px; margin: 0 auto; }
+  button { font: inherit; font-size: 1.15rem; border-radius: 16px; padding: 14px 20px; background: var(--card); color: var(--ink); border: 2px solid var(--line); cursor: pointer; min-height: 56px; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.mic { font-size: 1.4rem; min-width: 220px; }
+  button.mic.listening { background: var(--bad); border-color: var(--bad); color: #fff; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .7; } }
+  button:disabled { opacity: .4; cursor: default; }
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 20px; padding: 20px; margin-bottom: 16px; text-align: center; }
+  .emoji { font-size: 5.5rem; line-height: 1.2; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+  .muted { color: var(--muted); }
+  .task { font-size: 1.3rem; margin: 4px 0 8px; }
+  .feedback { min-height: 1.6em; margin-top: 14px; font-weight: 600; font-size: 1.25rem; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+  .hint { margin-top: 12px; font-size: 1.3rem; }
+  details { text-align: left; font-size: 1rem; }
+  summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+
+  /* Silbendarstellung */
+  .word { font-size: clamp(2.6rem, 9vw, 4.2rem); font-weight: 700; display: inline-flex; flex-wrap: wrap; justify-content: center; letter-spacing: .03em; margin: 10px 0 22px; }
+  .syl { position: relative; padding: 0 6px 6px; border-radius: 10px; }
+  .colors .syl.c0 { color: var(--syl0); }
+  .colors .syl.c1 { color: var(--syl1); }
+  .arcs .syl::after { content: ''; position: absolute; left: 8%; right: 8%; bottom: -12px; height: 14px; border: 4px solid currentColor; border-top: 0; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+  .syl.cur { background: var(--cur); outline: 4px solid var(--accent); }
+  .vowels .v { box-shadow: inset 0 -0.38em var(--vowel); border-radius: 3px; }
+
+  /* Wörter bauen */
+  .slots { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 12px 0 8px; }
+  .slot { min-width: 110px; min-height: 84px; border: 3px dashed var(--line); border-radius: 16px; background: var(--slot);
+          display: flex; align-items: center; justify-content: center; font-size: clamp(2.2rem, 7vw, 3.2rem); font-weight: 700; padding: 0 12px; }
+  .slot.filled { border-style: solid; }
+  .slot.c0 { color: var(--syl0); border-color: var(--syl0); }
+  .slot.c1 { color: var(--syl1); border-color: var(--syl1); }
+  .slot.wrong { animation: shake .4s; border-color: var(--bad); }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .chip { font-size: clamp(2rem, 6.5vw, 2.8rem); font-weight: 700; min-width: 110px; min-height: 80px; }
+  .chip.glow { outline: 4px solid var(--ok); }
+  .chip.used { visibility: hidden; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📖 Lesen lernen</h1>
+  <div class="top">
+    <select id="level" aria-label="Stufe"></select>
+    <span id="stars"></span>
+  </div>
+</header>
+<nav>
+  <button class="tab" data-tab="silben">📖 Silben lesen</button>
+  <button class="tab" data-tab="bauen">🧩 Wörter bauen</button>
+</nav>
+<div id="engine"></div>
+<main id="view"></main>
+
+<script>
+// ================= Daten =================
+// Silbentrennung mit "-". Stufen: 1 offene Silben, 2 Silben mit Mitlaut am Ende, 3 lange Wörter.
+const LEVELS = [
+  { name: 'Stufe 1 – leichte Silben', words: [
+    ['Ma-ma','👩'], ['Pa-pa','👨'], ['O-ma','👵'], ['Ro-se','🌹'], ['Na-se','👃'], ['Ho-se','👖'],
+    ['So-fa','🛋️'], ['Lö-we','🦁'], ['Au-to','🚗'], ['I-gel','🦔'], ['Ti-ger','🐯'], ['Blu-me','🌸'],
+    ['Ta-sche','👜'], ['Ku-chen','🍰'] ] },
+  { name: 'Stufe 2 – schwierigere Silben', words: [
+    ['Kat-ze','🐱'], ['Lam-pe','💡'], ['Son-ne','☀️'], ['Ap-fel','🍎'], ['En-te','🦆'], ['Wol-ke','☁️'],
+    ['Bir-ne','🍐'], ['Ker-ze','🕯️'], ['Fens-ter','🪟'], ['Gur-ke','🥒'], ['Pil-ze','🍄'], ['Ka-mel','🐪'] ] },
+  { name: 'Stufe 3 – lange Wörter', words: [
+    ['Ba-na-ne','🍌'], ['To-ma-te','🍅'], ['Gi-raf-fe','🦒'], ['E-le-fant','🐘'], ['Kar-tof-fel','🥔'],
+    ['A-na-nas','🍍'], ['Kro-ko-dil','🐊'], ['Me-lo-ne','🍈'], ['Zi-tro-ne','🍋'], ['Ra-ke-te','🚀'],
+    ['Ro-bo-ter','🤖'], ['Pa-pa-gei','🦜'], ['Schmet-ter-ling','🦋'] ] }
+].map(l => ({ name: l.name, words: l.words.map(([h, e]) => ({ h, e, s: h.split('-'), w: h.replace(/-/g, '') })) }));
+const ALL_WORDS = LEVELS.flatMap(l => l.words);
+
+// Die Spracherkennung (Vosk, kleines deutsches Modell) bekommt eine feste Liste erlaubter Wörter.
+// Silben, die das Modell nicht kennt, werden durch gleich klingende bekannte Wörter ersetzt.
+// null = kein passendes Wort vorhanden → diese Silbe kann nicht geprüft werden (Lesen zählt).
+const SYL_ALIAS = {
+  dil: ['dill'], fens: ['fenz'], gi: ['schi', 'ski'], ker: ['kehr', 'kerr'], lam: ['lamm'], 'lö': ['löw', 'lös'],
+  pil: ['pill', 'pils'], raf: ['raff'], tof: ['toff'], tro: ['trog'], zi: ['zieh'],
+  gur: null, kro: null, schmet: null
+};
+const sylTokens = s => { const k = s.toLowerCase(); return k in SYL_ALIAS ? SYL_ALIAS[k] : [k]; };
+const ALIAS_BACK = Object.fromEntries(Object.entries(SYL_ALIAS).flatMap(([s, a]) => (a || []).map(x => [x, s])));
+const GRAMMAR = [...new Set([
+  ...ALL_WORDS.flatMap(w => w.s.flatMap(s => sylTokens(s) || [])),
+  ...ALL_WORDS.map(w => w.w.toLowerCase())
+]), '[unk]'];
+
+// ================= Hilfen =================
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let stars = store.get('stars', 0);
+let level = Math.min(store.get('level', 0), LEVELS.length - 1);
+const view = document.getElementById('view');
+const $ = id => document.getElementById(id);
+const shuffle = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
+const levelWords = () => LEVELS[level].words;
+// Nicht zweimal hintereinander dasselbe Wort.
+let lastWord = null;
+function nextWord(filter = () => true) {
+  const pool = levelWords().filter(filter);
+  const choices = pool.length > 1 ? pool.filter(w => w !== lastWord) : pool;
+  lastWord = choices[Math.floor(Math.random() * choices.length)];
+  return lastWord;
+}
+
+function addStar(n = 1) { stars += n; store.set('stars', stars); renderStars(); }
+function renderStars() { $('stars').textContent = '⭐ ' + stars; }
+
+// Vorlesen nur auf Anfrage (zweite Tipp-Stufe), nie automatisch.
+function say(text, rate = 0.75) {
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'de-DE'; u.rate = rate;
+  speechSynthesis.speak(u);
+}
+
+const VOWEL_RE = /(äu|au|ei|eu|ie|aa|ee|oo|[aeiouäöüy])/gi;
+const markVowels = s => s.replace(VOWEL_RE, '<span class="v">$1</span>');
+const vowelOf = s => (s.match(/(äu|au|ei|eu|ie|aa|ee|oo|[aeiouäöüy])/i) || [''])[0];
+// Wort in Silben darstellen. opts: colors, arcs, vowels (bool), cur (Index der aktuellen Silbe)
+function wordHTML(item, opts = {}) {
+  const cls = ['word', opts.colors && 'colors', opts.arcs && 'arcs', opts.vowels && 'vowels'].filter(Boolean).join(' ');
+  const parts = item.s.map((s, i) =>
+    `<span class="syl c${i % 2}${opts.cur === i ? ' cur' : ''}">${opts.vowels ? markVowels(s) : s}</span>`);
+  return `<div class="${cls}">${parts.join('')}</div>`;
+}
+
+// ================= Vergleich Gesprochenes ↔ Ziel =================
+// res = { texts: [...], spoke: bool } aus Mic.listen(). Erkannt werden nur Einträge aus GRAMMAR.
+const resTokens = res => (res && res.texts || []).join(' ').toLowerCase().split(/\s+/).filter(t => t && t !== '[unk]');
+function heardSyllable(res, syl) {
+  const want = sylTokens(syl);
+  if (want === null) return !!(res && res.spoke);   // nicht prüfbare Silbe: Vorlesen zählt
+  return resTokens(res).some(t => want.includes(t));
+}
+function heardWord(res, item) {
+  const toks = resTokens(res);
+  if (toks.includes(item.w.toLowerCase())) return true;
+  // Auch Silbe für Silbe gelesen ("ba na ne") zählt als richtig.
+  const seq = item.s.map(sylTokens);
+  for (let i = 0; i + seq.length <= toks.length; i++)
+    if (seq.every((alts, k) => alts === null || alts.includes(toks[i + k]))) return true;
+  return false;
+}
+const shownText = res => resTokens(res).map(t => ALIAS_BACK[t] || t).join(' ');
+
+// ================= Spracheingabe =================
+// Vosk läuft komplett im Browser (WebAssembly). Das Modell kommt aus dem Offline-Speicher der App.
+async function fetchWithProgress(url, onProgress) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Modell nicht gefunden (' + r.status + ')');
+  const total = +r.headers.get('Content-Length') || 0;
+  if (!r.body || !total) return r.blob();
+  const reader = r.body.getReader(), parts = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value); got += value.length;
+    onProgress(Math.round(got / total * 100));
+  }
+  return new Blob(parts);
+}
+
+const Mic = {
+  engine: null, problem: null, model: null, stream: null, recording: null,
+  async init() {
+    if (!window.isSecureContext || !navigator.mediaDevices) { this.problem = 'https'; return; }
+    for (let i = 0; i < 50 && !window.Vosk; i++) await new Promise(r => setTimeout(r, 100));
+    if (!window.Vosk) { this.problem = 'Spracherkennung (vosk.js) fehlt'; return; }
+    try {
+      showEngine('⏳ Spracherkennung wird geladen …');
+      const blob = await fetchWithProgress('vosk/model-de.tar.gz', p => showEngine(`⏳ Spracherkennung wird geladen … ${p} %`));
+      showEngine('⏳ Spracherkennung wird vorbereitet …');
+      // Als Blob-URL übergeben: so liest der Hintergrund-Worker das Modell direkt aus dem Speicher.
+      this.model = await Vosk.createModel(URL.createObjectURL(blob), -2);
+      this.engine = 'vosk';
+    } catch (e) { this.problem = e.message; }
+  },
+  stop() { if (this.recording) this.recording.stop(); },
+  async listen(onState) {
+    // AudioContext sofort im Tipp anlegen – Tablets erlauben Audio nur direkt nach einer Berührung.
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume().catch(() => {});
+    try {
+      if (!this.stream) this.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+    } catch (e) { ctx.close(); throw e; }
+    const rec = new this.model.KaldiRecognizer(ctx.sampleRate, JSON.stringify(GRAMMAR));
+    const texts = [];
+    let onFinal = null;
+    rec.on('result', m => { const t = m.result && m.result.text; if (t) texts.push(t); if (onFinal) onFinal(); });
+    const src = ctx.createMediaStreamSource(this.stream);
+    const proc = ctx.createScriptProcessor(4096, 1, 1);
+    let spoke = false, lastLoud = 0, floor = 0, n = 0, active = true, stopNow;
+    const stopped = new Promise(r => { stopNow = r; });
+    const t0 = performance.now();
+    this.recording = { stop: () => { if (active) { active = false; stopNow(); } } };
+    // Automatisch stoppen, wenn nach dem Sprechen ~1,2 s Ruhe ist (oder nach 10 s).
+    proc.onaudioprocess = e => {
+      if (!active) return;
+      rec.acceptWaveform(e.inputBuffer);
+      const d = e.inputBuffer.getChannelData(0);
+      let sum = 0; for (let i = 0; i < d.length; i++) sum += d[i] * d[i];
+      const rms = Math.sqrt(sum / d.length), t = performance.now() - t0;
+      if (t < 300) { floor = (floor * n + rms) / ++n; return; }
+      if (rms > Math.max(0.012, Math.min(floor * 3, 0.05))) { spoke = true; lastLoud = t; }
+      if ((spoke && t - lastLoud > 1200) || (!spoke && t > 7000)) this.recording.stop();
+    };
+    src.connect(proc); proc.connect(ctx.destination);
+    const guard = setTimeout(() => this.recording && this.recording.stop(), 10000);
+    onState('listening');
+    await stopped;
+    clearTimeout(guard);
+    onState('thinking');
+    src.disconnect(); proc.disconnect();
+    await new Promise(res => { onFinal = res; rec.retrieveFinalResult(); setTimeout(res, 2500); });
+    rec.remove(); ctx.close(); this.recording = null;
+    return { texts, spoke };
+  }
+};
+function showEngine(text) { $('engine').textContent = text; }
+
+// Knopfzeile: 🎤 Vorlesen (falls verfügbar) + ✓ für Erwachsene.
+function micRow(containerId, onHeard, onConfirm) {
+  const wrap = $(containerId);
+  if (Mic.engine) {
+    const b = document.createElement('button');
+    b.className = 'primary mic'; b.textContent = '🎤 Vorlesen';
+    let busy = false;
+    b.onclick = async () => {
+      if (Mic.recording) { Mic.stop(); return; }
+      if (busy) return;
+      busy = true;
+      try {
+        const res = await Mic.listen(st => {
+          b.classList.toggle('listening', st === 'listening');
+          b.textContent = st === 'listening' ? '👂 Ich höre zu …' : '⏳ Moment …';
+        });
+        onHeard(res);
+      } catch (e) {
+        onHeard(null, e);
+      } finally {
+        busy = false;
+        if (b.isConnected) { b.classList.remove('listening'); b.textContent = '🎤 Vorlesen'; }
+      }
+    };
+    wrap.append(b);
+  }
+  const ok = document.createElement('button');
+  ok.textContent = '✓ Richtig gelesen';
+  ok.title = 'Für Erwachsene: bestätigen, wenn richtig vorgelesen wurde';
+  ok.onclick = onConfirm;
+  wrap.append(ok);
+}
+function heardMsg(res, err) {
+  if (err) return err.name === 'NotAllowedError' ? 'Das Mikrofon ist nicht erlaubt (in den Website-Einstellungen freigeben).' : 'Fehler: ' + err.message;
+  const t = shownText(res);
+  if (!t) return res && res.spoke ? 'Das habe ich nicht verstanden.' : 'Ich habe nichts gehört. Sprich ein bisschen lauter.';
+  return `Ich habe »${t}« gehört.`;
+}
+const nothingHeard = res => !res || (!res.spoke && !resTokens(res).length);
+function feedback(text, cls = '', id = 'fb') { const f = $(id); if (f) { f.textContent = text; f.className = 'feedback ' + cls; } }
+function nextButton(label, onClick) {
+  const b = document.createElement('button'); b.className = 'primary'; b.textContent = label; b.onclick = onClick; return b;
+}
+
+// ================= Silben lesen: Silbe für Silbe, dann zusammenschwingen, dann Bild =================
+const views = {};
+views.silben = function () {
+  let item, i, phase, hint, usedHelp, fails;
+  function next() { item = nextWord(); i = 0; phase = item.s.length > 1 ? 'syl' : 'word'; hint = 0; usedHelp = false; fails = 0; render(); }
+  function render() {
+    const syl = item.s[i];
+    const task = phase === 'syl'
+      ? `Lies die markierte Silbe <span class="muted">(${i + 1} von ${item.s.length})</span>`
+      : 'Jetzt alle Silben zusammen – erst langsam, dann schneller, bis es ein Wort ist.';
+    view.innerHTML = `
+      <div class="card">
+        <details><summary>So funktionieren Silben (für Erwachsene)</summary>
+          <p>Jede Silbe hat genau einen Selbstlaut (a, e, i, o, u, ä, ö, ü oder au, ei, eu, ie) – er ist gelb markiert.
+          Die Silben sind abwechselnd blau und rot und haben einen Bogen. Das Kind liest Silbe für Silbe und
+          „schwingt“ sie dann zum Wort zusammen. Erst danach erscheint das Bild – so wird wirklich gelesen, nicht geraten.
+          Der Tipp-Knopf hilft in Stufen: zuerst ohne Ton, erst danach mit Vorlesen.</p></details>
+        <p class="task">${task}</p>
+        ${wordHTML(item, { colors: true, arcs: true, vowels: true, cur: phase === 'syl' ? i : undefined })}
+        <div class="emoji" id="pic">❓</div>
+        <div class="row" id="mic"></div>
+        <div class="row"><button id="tip">💡 Tipp</button><button id="skip">Anderes Wort</button></div>
+        <div class="hint" id="hint"></div>
+        <div class="feedback" id="fb"></div>
+      </div>`;
+    $('skip').onclick = next;
+    $('tip').onclick = () => {
+      hint++; usedHelp = true;
+      if (phase === 'syl') {
+        if (hint === 1) $('hint').innerHTML = `Der Selbstlaut ist <strong>»${vowelOf(syl)}«</strong>. Sprich die Laute nacheinander und zieh sie zusammen: <strong>${[...syl].join(' – ')}</strong>`;
+        else say(syl, 0.6);
+      } else {
+        if (hint === 1) $('hint').innerHTML = `Lies: <strong>${item.s.join(' · ')}</strong> – und dann schneller hintereinander.`;
+        else say(item.w, 0.7);
+      }
+    };
+    micRow('mic', (res, err) => {
+      const ok = !err && (phase === 'syl' ? (heardSyllable(res, syl) || (i === 0 && heardWord(res, item))) : heardWord(res, item));
+      if (ok) return success();
+      if (err || nothingHeard(res)) return feedback(heardMsg(res, err), err ? 'bad' : 'warn');
+      if (phase === 'word') return feedback(heardMsg(res) + ' Versuch es nochmal.', 'warn');
+      // Einzelne Silben erkennt die Spracherkennung nicht immer sicher: nach zwei Versuchen darf das Kind weiter –
+      // geprüft wird am Ende das ganze Wort.
+      fails++;
+      if (fails < 2) return feedback(heardMsg(res) + ' Lies die Silbe noch einmal laut und deutlich.', 'warn');
+      feedback('Einzelne Silben kann ich schlecht hören. Wenn du sie gelesen hast, geht es weiter.', 'warn');
+      if (!$('fwd')) { const b = nextButton('Weiter ▶', success); b.id = 'fwd'; b.className = ''; $('mic').append(b); }
+    }, success);
+  }
+  function success() {
+    if (phase === 'syl') {
+      hint = 0; fails = 0;
+      if (i < item.s.length - 1) { i++; render(); feedback('✅ Gut!', 'ok'); }
+      else { phase = 'word'; render(); feedback('✅ Alle Silben gelesen!', 'ok'); }
+      return;
+    }
+    addStar(usedHelp ? 1 : 2);
+    $('pic').textContent = item.e;
+    $('mic').innerHTML = '';
+    feedback(`✅ Super! ${item.w}${usedHelp ? '' : ' – ganz ohne Hilfe! 🌟'}`, 'ok');
+    $('mic').append(nextButton('Nächstes Wort ▶', next));
+  }
+  next();
+};
+
+// ================= Wörter bauen: passende Silben antippen, dann das Wort vorlesen =================
+views.bauen = function () {
+  let item, chips, slots, hint, usedHelp;
+  function distractors() {
+    const need = new Set(item.s.map(s => s.toLowerCase()));
+    const others = levelWords().filter(w => w !== item);
+    const firsts = shuffle(others.map(w => w.s[0]).filter(s => !need.has(s.toLowerCase())));
+    const rest = shuffle(others.flatMap(w => w.s.slice(1)).filter(s => !need.has(s.toLowerCase())));
+    // Eine falsche Silbe groß geschrieben (sonst verrät die Großschreibung die erste Silbe), weitere klein.
+    const n = level === 0 ? 1 : 2;
+    return [...new Set([firsts[0], ...rest])].filter(Boolean).slice(0, n);
+  }
+  function next() {
+    item = nextWord(w => w.s.length > 1);
+    hint = 0; usedHelp = false;
+    chips = shuffle([...item.s, ...distractors()]).map((s, k) => ({ s, k, used: false }));
+    slots = item.s.map(() => null);
+    render();
+  }
+  function render() {
+    view.innerHTML = `
+      <div class="card">
+        <p class="task">Bau das Wort! Tippe die Silben in der richtigen Reihenfolge an.</p>
+        <div class="emoji">${item.e}</div>
+        <div class="slots" id="slots"></div>
+        <div class="row" id="chips"></div>
+        <div class="row"><button id="tip">💡 Tipp</button><button id="skip">Anderes Wort</button></div>
+        <div class="hint" id="hint"></div>
+        <div class="feedback" id="fb"></div>
+        <div class="row" id="mic"></div>
+      </div>`;
+    item.s.forEach((_, k) => {
+      const d = document.createElement('button');
+      const c = slots[k];
+      d.className = 'slot' + (c ? ` filled c${k % 2}` : '');
+      d.textContent = c ? c.s : '';
+      d.setAttribute('aria-label', c ? `Silbe ${c.s} entfernen` : `Platz ${k + 1}`);
+      d.onclick = () => { if (c) { c.used = false; slots[k] = null; render(); } };
+      $('slots').append(d);
+    });
+    chips.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (c.used ? ' used' : '');
+      b.textContent = c.s; b.dataset.k = c.k;
+      b.onclick = () => place(c);
+      $('chips').append(b);
+    });
+    $('skip').onclick = next;
+    $('tip').onclick = () => {
+      hint++; usedHelp = true;
+      const free = slots.findIndex(x => !x);
+      if (hint === 1 && free >= 0) {
+        // Stufe 1 (ohne Ton): passende Silbe für den nächsten freien Platz leuchtet auf.
+        const c = chips.find(c => !c.used && c.s === item.s[free]);
+        if (c) document.querySelector(`.chip[data-k="${c.k}"]`).classList.add('glow');
+        $('hint').textContent = 'Die leuchtende Silbe passt als Nächstes.';
+      } else say(item.s.join(', '), 0.55);  // Stufe 2: Silben langsam vorsprechen
+    };
+  }
+  function place(c) {
+    const free = slots.findIndex(x => !x);
+    if (free < 0 || c.used) return;
+    c.used = true; slots[free] = c;
+    render();
+    if (slots.every(Boolean)) check();
+  }
+  function check() {
+    const wrong = slots.map((c, k) => c.s !== item.s[k]);
+    if (wrong.some(Boolean)) {
+      feedback('Hmm, das passt noch nicht. Lies deine Silben einmal laut – welche ist falsch?', 'warn');
+      const els = document.querySelectorAll('.slot');
+      wrong.forEach((w, k) => { if (w) els[k].classList.add('wrong'); });
+      // Falsche Silben nach kurzer Zeit zurücklegen, richtige bleiben stehen.
+      setTimeout(() => {
+        wrong.forEach((w, k) => { if (w && slots[k]) { slots[k].used = false; slots[k] = null; } });
+        render();
+        feedback('Die richtigen Silben bleiben stehen. Versuch es nochmal!', 'warn');
+      }, 1300);
+      return;
+    }
+    // Richtig gebaut → jetzt das ganze Wort vorlesen.
+    view.querySelector('.slots').outerHTML = wordHTML(item, { colors: true, arcs: true });
+    $('chips').remove();
+    feedback('✅ Richtig gebaut! Jetzt lies das ganze Wort vor.', 'ok');
+    micRow('mic', (res, err) => {
+      if (!err && heardWord(res, item)) done();
+      else feedback(heardMsg(res, err) + (err || nothingHeard(res) ? '' : ' Lies es noch einmal – Silbe für Silbe, dann schneller.'), err ? 'bad' : 'warn');
+    }, done);
+  }
+  function done() {
+    addStar(usedHelp ? 1 : 2);
+    $('mic').innerHTML = '';
+    feedback(`🌟 Toll! ${item.w}${usedHelp ? '' : ' – ganz ohne Hilfe!'}`, 'ok');
+    $('mic').append(nextButton('Nächstes Wort ▶', next));
+  }
+  next();
+};
+
+// ================= Start =================
+let currentTab = store.get('tab', 'silben');
+function openTab(name) {
+  if (!views[name]) name = 'silben';
+  currentTab = name; store.set('tab', name);
+  Mic.stop();
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  document.querySelectorAll('nav .tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  views[name]();
+}
+document.querySelectorAll('nav .tab').forEach(b => b.addEventListener('click', () => openTab(b.dataset.tab)));
+LEVELS.forEach((l, i) => { const o = document.createElement('option'); o.value = i; o.textContent = l.name; $('level').append(o); });
+$('level').value = level;
+$('level').onchange = e => { level = +e.target.value; store.set('level', level); openTab(currentTab); };
+renderStars();
+openTab(currentTab);
+
+if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+(async () => {
+  await Mic.init();
+  showEngine(
+    Mic.engine ? '' :
+    Mic.problem === 'https' ? '🎤 Mikrofon geht nur, wenn die App über https oder localhost geöffnet ist. Bis dahin bestätigen Erwachsene mit „✓ Richtig gelesen“.' :
+    `🎤 Keine Spracheingabe (${Mic.problem}). Erwachsene bestätigen mit „✓ Richtig gelesen“.`
+  );
+  if (Mic.engine) openTab(currentTab);   // neu aufbauen, damit der 🎤-Knopf erscheint
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Rohdaten, Tests und alte PC-Version bleiben lokal
+build/
+.venv/
+__pycache__/
+*.pyc
