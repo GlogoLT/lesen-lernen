@@ -63,7 +63,9 @@ Nachsprechen). Notfalls können Erwachsene über die Stufen-Auswahl oder den and
 
 - Wörter: `LEVELS` oben in `public/index.html`, Silben mit `-` getrennt, z. B. `['Ba-na-ne','🍌']`.
   Neue Silben, die das Modell nicht kennt, in `SYL_ALIAS` eintragen.
-- Nach jeder Änderung in `public/sw.js` die Versionsnummer (`lesen-v3`) erhöhen, damit installierte
+  Neue Wörter dürfen nicht ähnlich klingen wie vorhandene, sonst verwechselt die Erkennung sie
+  (deshalb fehlen z. B. Biene wegen Birne, Affe wegen Giraffe/Koffer, Torte wegen Karotte).
+- Nach jeder Änderung in `public/sw.js` die Versionsnummer (`lesen-v4`) erhöhen, damit installierte
   Tablets die neue Fassung holen.
 - `build/` (nicht im Repository) enthält Rohdaten (Modell, Bibliothek) und die alte PC-Version mit
   Whisper (`build/alt-pc-whisper`).

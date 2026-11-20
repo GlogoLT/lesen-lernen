@@ -101,14 +101,20 @@ const LEVELS = [
   { name: 'Stufe 1 – leichte Silben', words: [
     ['Ma-ma','👩'], ['Pa-pa','👨'], ['O-ma','👵'], ['Ro-se','🌹'], ['Na-se','👃'], ['Ho-se','👖'],
     ['So-fa','🛋️'], ['Lö-we','🦁'], ['Au-to','🚗'], ['I-gel','🦔'], ['Ti-ger','🐯'], ['Blu-me','🌸'],
-    ['Ta-sche','👜'], ['Ku-chen','🍰'] ] },
+    ['Ta-sche','👜'], ['Ku-chen','🍰'], ['Ho-nig','🍯'], ['Lu-pe','🔍'], ['Ze-bra','🦓'], ['Zie-ge','🐐'],
+    ['Mu-schel','🐚'], ['Du-sche','🚿'], ['Kä-se','🧀'], ['Bre-zel','🥨'], ['Pu-del','🐩'],
+    ['Dra-che','🐉'], ['Gei-ge','🎻'] ] },
   { name: 'Stufe 2 – schwierigere Silben', words: [
     ['Kat-ze','🐱'], ['Lam-pe','💡'], ['Son-ne','☀️'], ['Ap-fel','🍎'], ['En-te','🦆'], ['Wol-ke','☁️'],
-    ['Bir-ne','🍐'], ['Ker-ze','🕯️'], ['Fens-ter','🪟'], ['Gur-ke','🥒'], ['Pil-ze','🍄'], ['Ka-mel','🐪'] ] },
+    ['Bir-ne','🍐'], ['Ker-ze','🕯️'], ['Fens-ter','🪟'], ['Gur-ke','🥒'], ['Pil-ze','🍄'], ['Ka-mel','🐪'],
+    ['Löf-fel','🥄'], ['Rol-ler','🛴'], ['Sup-pe','🍲'], ['Kir-sche','🍒'], ['Pin-sel','🖌️'], ['Ham-mer','🔨'],
+    ['Kof-fer','🧳'], ['Pan-da','🐼'], ['Kür-bis','🎃'], ['Tul-pe','🌷'],
+    ['Schne-cke','🐌'], ['Ein-horn','🦄'] ] },
   { name: 'Stufe 3 – lange Wörter', words: [
     ['Ba-na-ne','🍌'], ['To-ma-te','🍅'], ['Gi-raf-fe','🦒'], ['E-le-fant','🐘'], ['Kar-tof-fel','🥔'],
     ['A-na-nas','🍍'], ['Kro-ko-dil','🐊'], ['Me-lo-ne','🍈'], ['Zi-tro-ne','🍋'], ['Ra-ke-te','🚀'],
-    ['Ro-bo-ter','🤖'], ['Pa-pa-gei','🦜'], ['Schmet-ter-ling','🦋'] ] }
+    ['Ro-bo-ter','🤖'], ['Pa-pa-gei','🦜'], ['Schmet-ter-ling','🦋'], ['Schild-krö-te','🐢'], ['Pin-gu-in','🐧'],
+    ['Re-gen-bo-gen','🌈'], ['Hub-schrau-ber','🚁'], ['Scho-ko-la-de','🍫'], ['Ka-rot-te','🥕'] ] }
 ].map(l => ({ name: l.name, words: l.words.map(([h, e]) => ({ h, e, s: h.split('-'), w: h.replace(/-/g, '') })) }));
 const ALL_WORDS = LEVELS.flatMap(l => l.words);
 
@@ -118,7 +124,10 @@ const ALL_WORDS = LEVELS.flatMap(l => l.words);
 const SYL_ALIAS = {
   dil: ['dill'], fens: ['fenz'], gi: ['schi', 'ski'], ker: ['kehr', 'kerr'], lam: ['lamm'], 'lö': ['löw', 'lös'],
   pil: ['pill', 'pils'], raf: ['raff'], tof: ['toff'], tro: ['trog'], zi: ['zieh'],
-  gur: null, kro: null, schmet: null
+  ber: ['behr'], dra: ['dran'], gu: ['gut'], kir: ['kirr', 'kier'], 'kä': ['ke'],
+  kof: ['kopf'], mu: ['muh'], nig: ['nich', 'nick'], rol: ['roll'], schel: ['schell'], schne: ['schnee'],
+  scho: ['show', 'schon'], schrau: ['schraub'], sel: ['seel', 'zell'], tul: ['tool'], zel: ['zell'], zie: ['zieh'],
+  gur: null, kro: null, schmet: null, 'krö': null, 'löf': null
 };
 const sylTokens = s => { const k = s.toLowerCase(); return k in SYL_ALIAS ? SYL_ALIAS[k] : [k]; };
 const ALIAS_BACK = Object.fromEntries(Object.entries(SYL_ALIAS).flatMap(([s, a]) => (a || []).map(x => [x, s])));
