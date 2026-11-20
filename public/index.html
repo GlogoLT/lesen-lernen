@@ -265,8 +265,8 @@ const Mic = {
 };
 function showEngine(text) { $('engine').textContent = text; }
 
-// Knopfzeile: 🎤 Vorlesen (falls verfügbar) + ✓ für Erwachsene.
-function micRow(containerId, onHeard, onConfirm) {
+// 🎤 Vorlesen. Weiter geht es nur über die Spracherkennung – es gibt keinen Bestätigungs-Knopf.
+function micRow(containerId, onHeard) {
   const wrap = $(containerId);
   if (Mic.engine) {
     const b = document.createElement('button');
@@ -290,12 +290,12 @@ function micRow(containerId, onHeard, onConfirm) {
       }
     };
     wrap.append(b);
+  } else {
+    const p = document.createElement('p');
+    p.className = 'muted';
+    p.textContent = Mic.problem ? 'Ohne Spracherkennung geht es hier nicht weiter (siehe Hinweis oben).' : '⏳ Spracherkennung wird geladen …';
+    wrap.append(p);
   }
-  const ok = document.createElement('button');
-  ok.textContent = '✓ Richtig gelesen';
-  ok.title = 'Für Erwachsene: bestätigen, wenn richtig vorgelesen wurde';
-  ok.onclick = onConfirm;
-  wrap.append(ok);
 }
 function heardMsg(res, err) {
   if (err) return err.name === 'NotAllowedError' ? 'Das Mikrofon ist nicht erlaubt (in den Website-Einstellungen freigeben).' : 'Fehler: ' + err.message;
@@ -350,13 +350,14 @@ views.silben = function () {
       if (ok) return success();
       if (err || nothingHeard(res)) return feedback(heardMsg(res, err), err ? 'bad' : 'warn');
       if (phase === 'word') return feedback(heardMsg(res) + ' Versuch es nochmal.', 'warn');
-      // Einzelne Silben erkennt die Spracherkennung nicht immer sicher: nach zwei Versuchen darf das Kind weiter –
-      // geprüft wird am Ende das ganze Wort.
+      // Einzelne Silben erkennt die Spracherkennung nicht immer sicher: nach zwei Versuchen das ganze Wort lesen lassen.
+      // Zum nächsten Wort geht es nur, wenn das ganze Wort richtig erkannt wurde.
       fails++;
       if (fails < 2) return feedback(heardMsg(res) + ' Lies die Silbe noch einmal laut und deutlich.', 'warn');
-      feedback('Einzelne Silben kann ich schlecht hören. Wenn du sie gelesen hast, geht es weiter.', 'warn');
-      if (!$('fwd')) { const b = nextButton('Weiter ▶', success); b.id = 'fwd'; b.className = ''; $('mic').append(b); }
-    }, success);
+      phase = 'word'; hint = 0; fails = 0;
+      render();
+      feedback('Lies jetzt das ganze Wort – Silbe für Silbe, dann schneller.', 'warn');
+    });
   }
   function success() {
     if (phase === 'syl') {
@@ -461,7 +462,7 @@ views.bauen = function () {
     micRow('mic', (res, err) => {
       if (!err && heardWord(res, item)) done();
       else feedback(heardMsg(res, err) + (err || nothingHeard(res) ? '' : ' Lies es noch einmal – Silbe für Silbe, dann schneller.'), err ? 'bad' : 'warn');
-    }, done);
+    });
   }
   function done() {
     addStar(usedHelp ? 1 : 2);
@@ -495,10 +496,10 @@ if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWor
   await Mic.init();
   showEngine(
     Mic.engine ? '' :
-    Mic.problem === 'https' ? '🎤 Mikrofon geht nur, wenn die App über https oder localhost geöffnet ist. Bis dahin bestätigen Erwachsene mit „✓ Richtig gelesen“.' :
-    `🎤 Keine Spracheingabe (${Mic.problem}). Erwachsene bestätigen mit „✓ Richtig gelesen“.`
+    Mic.problem === 'https' ? '🎤 Mikrofon geht nur, wenn die App über https oder localhost geöffnet ist.' :
+    `🎤 Keine Spracheingabe (${Mic.problem}).`
   );
-  if (Mic.engine) openTab(currentTab);   // neu aufbauen, damit der 🎤-Knopf erscheint
+  openTab(currentTab);   // neu aufbauen, damit der 🎤-Knopf bzw. der Hinweis erscheint
 })();
 </script>
 </body>

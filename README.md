@@ -45,7 +45,8 @@ schwingt die Silben dann zum Wort zusammen. Erst danach erscheint das Bild.
 Reihenfolge an, eine oder zwei falsche Silben sind beigemischt. Danach liest das Kind das Wort vor.
 
 Die App sagt nichts von selbst vor. „💡 Tipp“ hilft zuerst ohne Ton, erst beim zweiten Tippen mit
-Vorlesen. „✓ Richtig gelesen“ ist für Erwachsene, wenn die Spracherkennung etwas nicht versteht.
+Vorlesen. **Zum nächsten Wort geht es nur, wenn die Spracherkennung das ganze Wort richtig gehört hat.**
+Es gibt keinen Bestätigungs-Knopf. Mit „Anderes Wort“ lässt sich ein Wort ohne Stern überspringen.
 
 ## Spracherkennung
 
@@ -53,13 +54,14 @@ Vorlesen. „✓ Richtig gelesen“ ist für Erwachsene, wenn die Spracherkennun
 - 11 Silben fehlen im Wortschatz des Modells und werden über gleich klingende Wörter erkannt
   (z. B. „lam“ als „lamm“, `SYL_ALIAS` in `index.html`). „gur“, „kro“ und „schmet“ lassen sich
   nicht prüfen. Dort zählt jedes Vorlesen, geprüft wird dann beim ganzen Wort.
-- Einzelne Silben sind schwieriger als ganze Wörter. Nach zwei nicht erkannten Versuchen darf das Kind weiter.
+- Einzelne Silben sind schwieriger als ganze Wörter. Nach zwei nicht erkannten Versuchen wechselt die App
+  zum ganzen Wort. Das muss dann richtig erkannt werden.
 
 ## Ändern
 
 - Wörter: `LEVELS` oben in `public/index.html`, Silben mit `-` getrennt, z. B. `['Ba-na-ne','🍌']`.
   Neue Silben, die das Modell nicht kennt, in `SYL_ALIAS` eintragen.
-- Nach jeder Änderung in `public/sw.js` die Versionsnummer `lesen-v1` erhöhen, damit installierte
+- Nach jeder Änderung in `public/sw.js` die Versionsnummer (`lesen-v2`) erhöhen, damit installierte
   Tablets die neue Fassung holen.
 - `build/` (nicht im Repository) enthält Rohdaten (Modell, Bibliothek) und die alte PC-Version mit
   Whisper (`build/alt-pc-whisper`).
