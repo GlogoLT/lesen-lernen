@@ -1,0 +1,204 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Silben-Arbeitsblätter</title>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>@page { size: A4; margin: 0; }
+:root { --b: #1d4ed8; --r: #dc2626; --v: #fde68a; --ink: #222; --line: #b9b2a5; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Andika', 'DejaVu Sans', sans-serif; color: var(--ink); background: #fff;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; counter-reset: blatt; }
+.page { width: 210mm; height: 297mm; padding: 11mm 13mm 15mm; page-break-after: always; overflow: hidden;
+  display: flex; flex-direction: column; counter-increment: blatt; position: relative; }
+.page::after { content: 'Blatt ' counter(blatt); position: absolute; bottom: 7mm; right: 13mm; font-size: 10pt; color: #999; }
+header { display: flex; gap: 10mm; font-size: 12pt; color: #555; }
+.name { display: flex; align-items: flex-end; gap: 2mm; }
+.ln { display: inline-block; width: 70mm; border-bottom: 1px solid #888; height: 1em; }
+.ln.short { width: 35mm; }
+h1 { font-size: 26pt; margin: 6mm 0 2mm; display: flex; align-items: center; gap: 4mm; }
+h1 .ico, .pic { font-family: 'Noto Color Emoji'; }
+.task { font-size: 14pt; line-height: 1.4; margin: 0 0 5mm; padding: 3mm 4mm; background: #f4f1ea; border-radius: 3mm; }
+h2 { font-size: 18pt; margin: 8mm 0 3mm; }
+
+/* Silben */
+.word { white-space: nowrap; display: inline-flex; }
+.syl { position: relative; padding: 0 0.06em; }
+.colors .c0 { color: var(--b); } .colors .c1 { color: var(--r); }
+.arcs .syl::after { content: ''; position: absolute; left: 10%; right: 10%; bottom: -0.32em; height: 0.36em;
+  border: 0.07em solid currentColor; border-top: 0; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+.vowels .v { text-decoration: underline; text-decoration-color: var(--v); text-decoration-thickness: 0.32em; text-underline-offset: -0.2em; text-decoration-skip-ink: none; }
+
+.pic { font-size: 46pt; line-height: 1; text-align: center; }
+.pic.sm { font-size: 34pt; }
+.grid { display: grid; gap: 4mm; flex: 1; }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cell { border: 0.6mm solid #ddd6c8; border-radius: 4mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3mm; }
+.cell.row { flex-direction: row; justify-content: flex-start; gap: 6mm; padding: 3mm 5mm; }
+.arcbox { width: 100%; height: 16mm; border: 0.5mm dashed var(--line); border-radius: 2mm; }
+
+.example { display: flex; align-items: center; gap: 5mm; font-size: 20pt; margin-bottom: 5mm; padding: 2mm 5mm;
+  border: 0.6mm dashed #9cb5e6; border-radius: 4mm; background: #f5f8ff; }
+.example svg path { fill: none; stroke-width: 3.5; stroke-linecap: round; }
+.example .a0 { stroke: var(--b); } .example .a1 { stroke: var(--r); }
+.example .big { font-size: 34pt; padding-bottom: 4mm; }
+.example .hint { font-size: 13pt; color: #557; margin-left: auto; }
+
+.count { display: flex; gap: 4mm; margin-left: auto; }
+.count span { width: 14mm; height: 14mm; border: 0.6mm solid #999; border-radius: 50%; display: grid; place-items: center; font-size: 22pt; }
+
+.plain { font-size: 34pt; letter-spacing: 0.02em; padding-bottom: 9mm; border-bottom: 0.4mm dotted var(--line); flex: 1; text-align: center; }
+.tall .cell { min-height: 0; }
+
+table.teppich { border-collapse: separate; border-spacing: 2.5mm; width: 100%; flex: 1; }
+.teppich td { border: 0.6mm solid #ddd6c8; border-radius: 3mm; text-align: center; font-size: 34pt; }
+
+.links { display: flex; flex-direction: column; gap: 5mm; flex: 1; justify-content: space-around; }
+.link { display: flex; align-items: center; gap: 4mm; }
+.sum { font-size: 28pt; display: flex; gap: 3mm; align-items: center; width: 66mm; padding-bottom: 3mm; }
+.sum b { color: #666; font-weight: 400; }
+.wline { width: 45mm; border-bottom: 0.5mm solid #777; height: 12mm; }
+.dot { font-size: 14pt; color: #444; }
+.gap { flex: 1; }
+
+.bank { display: flex; justify-content: center; gap: 7mm; flex-wrap: wrap; font-size: 26pt; padding: 3mm; margin-bottom: 5mm;
+  border: 0.8mm solid #e8c766; border-radius: 4mm; background: #fffaeb; }
+.gw { font-size: 30pt; display: flex; align-items: center; gap: 2mm; padding-bottom: 3mm; }
+.slot { display: inline-block; width: 24mm; height: 15mm; border: 0.6mm solid; border-radius: 2mm; }
+.slot.c0 { border-color: var(--b); } .slot.c1 { border-color: var(--r); }
+
+.puzz { flex: 0 0 auto; gap: 3mm; }
+.puz .pic.sm { font-size: 28pt; }
+.puz { gap: 2mm; padding: 2mm 3mm; }
+.puz { padding: 2mm 4mm; }
+.slots { display: flex; gap: 1.5mm; }
+.pslot { width: 19mm; height: 17mm; border: 0.5mm dashed; border-radius: 2mm; }
+.pslot.c0 { border-color: var(--b); } .pslot.c1 { border-color: var(--r); }
+.cut { margin: 6mm 0 2mm; color: #888; white-space: nowrap; overflow: hidden; font-size: 12pt; }
+.cards { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 0.4mm dashed #888; border-left: 0.4mm dashed #888; }
+.card { height: 28mm; font-size: 30pt; display: grid; place-items: center; font-size: 26pt; border-right: 0.4mm dashed #888; border-bottom: 0.4mm dashed #888; }
+
+.dets { display: flex; flex-direction: column; gap: 6mm; flex: 1; justify-content: space-around; }
+.det { display: flex; align-items: center; gap: 5mm; }
+.tgt { font-size: 28pt; border: 0.8mm solid #e8c766; background: #fffaeb; border-radius: 3mm; padding: 1mm 4mm; }
+.seq { display: flex; justify-content: space-between; font-size: 23pt; flex: 1; }
+.det::after { flex-shrink: 0; content: ''; width: 14mm; height: 14mm; border: 0.6mm solid #999; border-radius: 2mm; }
+
+.draw { border: 0.6mm solid #ddd6c8; border-radius: 4mm; padding: 4mm; display: flex; flex-direction: column; gap: 4mm; }
+.sent { font-size: 26pt; padding-bottom: 3mm; display: flex; gap: 4mm; flex-wrap: wrap; }
+.frame { flex: 1; border: 0.5mm dashed var(--line); border-radius: 2mm; }
+
+.info ul { font-size: 13pt; line-height: 1.5; padding-left: 6mm; }
+.info li { margin-bottom: 2.5mm; }
+.info p { font-size: 12.5pt; line-height: 1.5; margin: 1.5mm 0; }
+</style></head><body><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">👏</span>Silben schwingen</h1>
+  <p class="task">Sprich das Wort laut. Schwinge und klatsche die Silben. Male für jede Silbe einen Bogen ◡ in das Kästchen.</p>
+  <div class="example"><div class="pic sm">🦁</div><div>Lö – we&nbsp; 👏👏&nbsp; → </div>
+    <svg width="120" height="34"><path d="M8 6 Q30 34 52 6" class="a0"/><path d="M66 6 Q88 34 110 6" class="a1"/></svg></div>
+    <div class="grid g3"><div class="cell"><div class="pic">🌹</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🍈</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🥚</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🦔</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🚀</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🚗</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🐟</div><div class="arcbox"></div></div><div class="cell"><div class="pic">☀️</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🐭</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🐶</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🍌</div><div class="arcbox"></div></div><div class="cell"><div class="pic">🍅</div><div class="arcbox"></div></div></div>
+</section><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">🔢</span>Wie viele Silben?</h1>
+  <p class="task">Sprich das Wort und klatsche. Wie viele Silben hörst du? Kreise die richtige Zahl ein.</p>
+  <div class="grid g2"><div class="cell row"><div class="pic">🐊</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">🦁</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">👃</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">🐯</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">👵</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">⚽</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">🛋️</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">🍍</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">🏠</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">🌙</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">👖</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div><div class="cell row"><div class="pic">🐘</div>
+  <div class="count"><span>1</span><span>2</span><span>3</span></div></div></div>
+</section><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">📖</span>Silbenteppich</h1>
+  <p class="task">Lies jede Silbe laut. Male das Feld danach mit einem Buntstift leicht an. Lies erst quer ➡, dann von oben nach unten ⬇.</p>
+  <table class="teppich"><tr><td><span class="word colors vowels"><span class="syl c0">M<span class="v">a</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">M<span class="v">e</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">M<span class="v">i</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">M<span class="v">o</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">M<span class="v">u</span></span></span></td></tr><tr><td><span class="word colors vowels"><span class="syl c1">L<span class="v">a</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">L<span class="v">e</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">L<span class="v">i</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">L<span class="v">o</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">L<span class="v">u</span></span></span></td></tr><tr><td><span class="word colors vowels"><span class="syl c0">S<span class="v">a</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">S<span class="v">e</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">S<span class="v">i</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">S<span class="v">o</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">S<span class="v">u</span></span></span></td></tr><tr><td><span class="word colors vowels"><span class="syl c1">N<span class="v">a</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">N<span class="v">e</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">N<span class="v">i</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">N<span class="v">o</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">N<span class="v">u</span></span></span></td></tr><tr><td><span class="word colors vowels"><span class="syl c0">R<span class="v">a</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">R<span class="v">e</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">R<span class="v">i</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">R<span class="v">o</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">R<span class="v">u</span></span></span></td></tr><tr><td><span class="word colors vowels"><span class="syl c1">T<span class="v">a</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">T<span class="v">e</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">T<span class="v">i</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">T<span class="v">o</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">T<span class="v">u</span></span></span></td></tr><tr><td><span class="word colors vowels"><span class="syl c0">H<span class="v">a</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">H<span class="v">e</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">H<span class="v">i</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">H<span class="v">o</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">H<span class="v">u</span></span></span></td></tr><tr><td><span class="word colors vowels"><span class="syl c1">F<span class="v">a</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">F<span class="v">e</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">F<span class="v">i</span></span></span></td><td><span class="word colors vowels"><span class="syl c0">F<span class="v">o</span></span></span></td><td><span class="word colors vowels"><span class="syl c1">F<span class="v">u</span></span></span></td></tr></table>
+</section><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">✏️</span>Silbenbögen malen</h1>
+  <p class="task">Lies das Wort und schwinge mit. Male die Silbenbögen unter das Wort. Male dann den 1. Bogen blau und den 2. Bogen rot.</p>
+  <div class="example"><div class="pic sm">👩</div><div class="big"><span class="word arcs colors"><span class="syl c0">Ma</span><span class="syl c1">ma</span></span></div><div class="hint">So geht es!</div></div>
+    <div class="grid g2 tall"><div class="cell row"><div class="pic sm">👵</div>
+  <div class="plain">Oma</div></div><div class="cell row"><div class="pic sm">👴</div>
+  <div class="plain">Opa</div></div><div class="cell row"><div class="pic sm">🌹</div>
+  <div class="plain">Rose</div></div><div class="cell row"><div class="pic sm">👃</div>
+  <div class="plain">Nase</div></div><div class="cell row"><div class="pic sm">👖</div>
+  <div class="plain">Hose</div></div><div class="cell row"><div class="pic sm">🛋️</div>
+  <div class="plain">Sofa</div></div><div class="cell row"><div class="pic sm">🔍</div>
+  <div class="plain">Lupe</div></div><div class="cell row"><div class="pic sm">🚗</div>
+  <div class="plain">Auto</div></div><div class="cell row"><div class="pic sm">🦔</div>
+  <div class="plain">Igel</div></div><div class="cell row"><div class="pic sm">🍅</div>
+  <div class="plain">Tomate</div></div><div class="cell row"><div class="pic sm">🍌</div>
+  <div class="plain">Banane</div></div></div>
+</section><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">➕</span>Silbe + Silbe = Wort</h1>
+  <p class="task">Lies beide Silben. Schwinge sie zusammen. Schreibe das Wort auf die Linie. Verbinde es mit dem passenden Bild.</p>
+  <div class="links"><div class="link">
+  <div class="sum"><span class="word arcs colors vowels"><span class="syl c0">R<span class="v">o</span></span></span> <b>+</b> <span class="word arcs colors vowels"><span class="syl c1">s<span class="v">e</span></span></span> <b>=</b></div>
+  <div class="wline"></div><div class="dot">●</div><div class="gap"></div><div class="dot">●</div><div class="pic sm">🛋️</div></div><div class="link">
+  <div class="sum"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">O</span></span></span> <b>+</b> <span class="word arcs colors vowels"><span class="syl c1">m<span class="v">a</span></span></span> <b>=</b></div>
+  <div class="wline"></div><div class="dot">●</div><div class="gap"></div><div class="dot">●</div><div class="pic sm">🐯</div></div><div class="link">
+  <div class="sum"><span class="word arcs colors vowels"><span class="syl c0">L<span class="v">u</span></span></span> <b>+</b> <span class="word arcs colors vowels"><span class="syl c1">p<span class="v">e</span></span></span> <b>=</b></div>
+  <div class="wline"></div><div class="dot">●</div><div class="gap"></div><div class="dot">●</div><div class="pic sm">🔍</div></div><div class="link">
+  <div class="sum"><span class="word arcs colors vowels"><span class="syl c0">S<span class="v">o</span></span></span> <b>+</b> <span class="word arcs colors vowels"><span class="syl c1">f<span class="v">a</span></span></span> <b>=</b></div>
+  <div class="wline"></div><div class="dot">●</div><div class="gap"></div><div class="dot">●</div><div class="pic sm">👵</div></div><div class="link">
+  <div class="sum"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">Au</span></span></span> <b>+</b> <span class="word arcs colors vowels"><span class="syl c1">t<span class="v">o</span></span></span> <b>=</b></div>
+  <div class="wline"></div><div class="dot">●</div><div class="gap"></div><div class="dot">●</div><div class="pic sm">👃</div></div><div class="link">
+  <div class="sum"><span class="word arcs colors vowels"><span class="syl c0">T<span class="v">i</span></span></span> <b>+</b> <span class="word arcs colors vowels"><span class="syl c1">g<span class="v">e</span>r</span></span> <b>=</b></div>
+  <div class="wline"></div><div class="dot">●</div><div class="gap"></div><div class="dot">●</div><div class="pic sm">🚗</div></div><div class="link">
+  <div class="sum"><span class="word arcs colors vowels"><span class="syl c0">N<span class="v">a</span></span></span> <b>+</b> <span class="word arcs colors vowels"><span class="syl c1">s<span class="v">e</span></span></span> <b>=</b></div>
+  <div class="wline"></div><div class="dot">●</div><div class="gap"></div><div class="dot">●</div><div class="pic sm">🌹</div></div></div>
+</section><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">🧩</span>Welche Silbe fehlt?</h1>
+  <p class="task">Schau das Bild an und sprich das Wort. Welche Silbe fehlt? Schreibe sie in das Kästchen. Jede Silbe aus dem Kasten passt einmal.</p>
+  <div class="bank"><span class="word colors vowels"><span class="syl c0">f<span class="v">a</span></span></span> <span class="word colors vowels"><span class="syl c0">g<span class="v">e</span>l</span></span> <span class="word colors vowels"><span class="syl c0">m<span class="v">a</span></span></span> <span class="word colors vowels"><span class="syl c0">N<span class="v">a</span></span></span> <span class="word colors vowels"><span class="syl c0">n<span class="v">e</span></span></span> <span class="word colors vowels"><span class="syl c0">s<span class="v">e</span></span></span> <span class="word colors vowels"><span class="syl c0">T<span class="v">i</span></span></span> <span class="word colors vowels"><span class="syl c0">t<span class="v">o</span></span></span></div>
+    <div class="grid g2 tall"><div class="cell row"><div class="pic sm">🌹</div><div class="gw"><span class="word arcs colors vowels"><span class="syl c0">R<span class="v">o</span></span></span> <span class="slot c1"></span></div></div><div class="cell row"><div class="pic sm">👵</div><div class="gw"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">O</span></span></span> <span class="slot c1"></span></div></div><div class="cell row"><div class="pic sm">🚗</div><div class="gw"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">Au</span></span></span> <span class="slot c1"></span></div></div><div class="cell row"><div class="pic sm">🛋️</div><div class="gw"><span class="word arcs colors vowels"><span class="syl c0">S<span class="v">o</span></span></span> <span class="slot c1"></span></div></div><div class="cell row"><div class="pic sm">👃</div><div class="gw"><span class="slot c0"></span> <span class="word arcs colors vowels"><span class="syl c1">s<span class="v">e</span></span></span></div></div><div class="cell row"><div class="pic sm">🦔</div><div class="gw"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">I</span></span></span> <span class="slot c1"></span></div></div><div class="cell row"><div class="pic sm">🐯</div><div class="gw"><span class="slot c0"></span> <span class="word arcs colors vowels"><span class="syl c1">g<span class="v">e</span>r</span></span></div></div><div class="cell row"><div class="pic sm">🍈</div><div class="gw"><span class="word arcs colors vowels"><span class="syl c0">M<span class="v">e</span></span></span> <span class="word arcs colors vowels"><span class="syl c1">l<span class="v">o</span></span></span> <span class="slot c0"></span></div></div></div>
+</section><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">✂️</span>Silben-Puzzle</h1>
+  <p class="task">Schneide die Silbenkarten unten aus. Lege sie zu den Bildern. Lies das Wort. Stimmt es? Dann klebe die Karten auf.</p>
+  <div class="grid g2 puzz"><div class="cell row puz"><div class="pic sm">🦁</div>
+  <div class="slots"><span class="pslot c0"></span><span class="pslot c1"></span></div></div><div class="cell row puz"><div class="pic sm">👖</div>
+  <div class="slots"><span class="pslot c0"></span><span class="pslot c1"></span></div></div><div class="cell row puz"><div class="pic sm">🍌</div>
+  <div class="slots"><span class="pslot c0"></span><span class="pslot c1"></span><span class="pslot c0"></span></div></div><div class="cell row puz"><div class="pic sm">🚀</div>
+  <div class="slots"><span class="pslot c0"></span><span class="pslot c1"></span><span class="pslot c0"></span></div></div><div class="cell row puz"><div class="pic sm">👩</div>
+  <div class="slots"><span class="pslot c0"></span><span class="pslot c1"></span></div></div><div class="cell row puz"><div class="pic sm">🍅</div>
+  <div class="slots"><span class="pslot c0"></span><span class="pslot c1"></span><span class="pslot c0"></span></div></div></div>
+    <div class="cut">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</div>
+    <div class="cards"><div class="card"><span class="word colors vowels"><span class="syl c1">n<span class="v">a</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">B<span class="v">a</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">T<span class="v">o</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c1">m<span class="v">a</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c1">w<span class="v">e</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">M<span class="v">a</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">R<span class="v">a</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">H<span class="v">o</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c1">k<span class="v">e</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c1">m<span class="v">a</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c1">s<span class="v">e</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">L<span class="v">ö</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">n<span class="v">e</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">t<span class="v">e</span></span></span></div><div class="card"><span class="word colors vowels"><span class="syl c0">t<span class="v">e</span></span></span></div></div>
+</section><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">🔍</span>Silben-Detektiv</h1>
+  <p class="task">Lies die Silbe vorne im Kasten. Finde sie in der Reihe. Kreise jedes Mal ein, wenn du sie findest. Wie oft? Schreibe die Zahl ans Ende.</p>
+  <div class="dets"><div class="det"><div class="tgt"><span class="word colors vowels"><span class="syl c0">M<span class="v">a</span></span></span></div>
+  <div class="seq"><span><span class="word "><span class="syl c0">Ma</span></span></span><span><span class="word "><span class="syl c0">Mo</span></span></span><span><span class="word "><span class="syl c0">Na</span></span></span><span><span class="word "><span class="syl c0">Ma</span></span></span><span><span class="word "><span class="syl c0">Mi</span></span></span><span><span class="word "><span class="syl c0">Ma</span></span></span><span><span class="word "><span class="syl c0">La</span></span></span><span><span class="word "><span class="syl c0">Mu</span></span></span><span><span class="word "><span class="syl c0">Ma</span></span></span><span><span class="word "><span class="syl c0">Am</span></span></span></div></div><div class="det"><div class="tgt"><span class="word colors vowels"><span class="syl c0">L<span class="v">o</span></span></span></div>
+  <div class="seq"><span><span class="word "><span class="syl c0">Lo</span></span></span><span><span class="word "><span class="syl c0">Lu</span></span></span><span><span class="word "><span class="syl c0">Ol</span></span></span><span><span class="word "><span class="syl c0">Lo</span></span></span><span><span class="word "><span class="syl c0">Li</span></span></span><span><span class="word "><span class="syl c0">Ro</span></span></span><span><span class="word "><span class="syl c0">Lo</span></span></span><span><span class="word "><span class="syl c0">Le</span></span></span><span><span class="word "><span class="syl c0">Lo</span></span></span><span><span class="word "><span class="syl c0">Lo</span></span></span></div></div><div class="det"><div class="tgt"><span class="word colors vowels"><span class="syl c0">S<span class="v">i</span></span></span></div>
+  <div class="seq"><span><span class="word "><span class="syl c0">Su</span></span></span><span><span class="word "><span class="syl c0">Si</span></span></span><span><span class="word "><span class="syl c0">Sa</span></span></span><span><span class="word "><span class="syl c0">Is</span></span></span><span><span class="word "><span class="syl c0">Si</span></span></span><span><span class="word "><span class="syl c0">Si</span></span></span><span><span class="word "><span class="syl c0">Se</span></span></span><span><span class="word "><span class="syl c0">Ni</span></span></span><span><span class="word "><span class="syl c0">Si</span></span></span><span><span class="word "><span class="syl c0">So</span></span></span></div></div><div class="det"><div class="tgt"><span class="word colors vowels"><span class="syl c0">N<span class="v">e</span></span></span></div>
+  <div class="seq"><span><span class="word "><span class="syl c0">Ne</span></span></span><span><span class="word "><span class="syl c0">Me</span></span></span><span><span class="word "><span class="syl c0">Na</span></span></span><span><span class="word "><span class="syl c0">Ne</span></span></span><span><span class="word "><span class="syl c0">En</span></span></span><span><span class="word "><span class="syl c0">Ne</span></span></span><span><span class="word "><span class="syl c0">Nu</span></span></span><span><span class="word "><span class="syl c0">Re</span></span></span><span><span class="word "><span class="syl c0">Ne</span></span></span><span><span class="word "><span class="syl c0">Ni</span></span></span></div></div><div class="det"><div class="tgt"><span class="word colors vowels"><span class="syl c0">R<span class="v">u</span></span></span></div>
+  <div class="seq"><span><span class="word "><span class="syl c0">Ra</span></span></span><span><span class="word "><span class="syl c0">Ru</span></span></span><span><span class="word "><span class="syl c0">Ur</span></span></span><span><span class="word "><span class="syl c0">Ru</span></span></span><span><span class="word "><span class="syl c0">Lu</span></span></span><span><span class="word "><span class="syl c0">Ru</span></span></span><span><span class="word "><span class="syl c0">Re</span></span></span><span><span class="word "><span class="syl c0">Ru</span></span></span><span><span class="word "><span class="syl c0">Ro</span></span></span><span><span class="word "><span class="syl c0">Ru</span></span></span></div></div></div>
+</section><section class="page">
+  <header><div class="name">Name: <span class="ln"></span></div><div class="name">Datum: <span class="ln short"></span></div></header>
+  <h1><span class="ico">🎨</span>Lesen und malen</h1>
+  <p class="task">Lies Silbe für Silbe. Schwinge mit. Male ein Bild dazu.</p>
+  <div class="grid g2"><div class="draw"><div class="sent"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">Ei</span></span><span class="syl c1">n<span class="v">e</span></span></span> <span class="word arcs colors vowels"><span class="syl c0">R<span class="v">o</span></span><span class="syl c1">s<span class="v">e</span></span></span></div><div class="frame"></div></div><div class="draw"><div class="sent"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">Ei</span>n</span></span> <span class="word arcs colors vowels"><span class="syl c0"><span class="v">Au</span></span><span class="syl c1">t<span class="v">o</span></span></span></div><div class="frame"></div></div><div class="draw"><div class="sent"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">Ei</span></span><span class="syl c1">n<span class="v">e</span></span></span> <span class="word arcs colors vowels"><span class="syl c0">B<span class="v">a</span></span><span class="syl c1">n<span class="v">a</span></span><span class="syl c0">n<span class="v">e</span></span></span></div><div class="frame"></div></div><div class="draw"><div class="sent"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">Ei</span></span><span class="syl c1">n<span class="v">e</span></span></span> <span class="word arcs colors vowels"><span class="syl c0">S<span class="v">o</span>n</span><span class="syl c1">n<span class="v">e</span></span></span></div><div class="frame"></div></div><div class="draw"><div class="sent"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">Ei</span>n</span></span> <span class="word arcs colors vowels"><span class="syl c0"><span class="v">I</span></span><span class="syl c1">g<span class="v">e</span>l</span></span></div><div class="frame"></div></div><div class="draw"><div class="sent"><span class="word arcs colors vowels"><span class="syl c0"><span class="v">Ei</span></span><span class="syl c1">n<span class="v">e</span></span></span> <span class="word arcs colors vowels"><span class="syl c0">T<span class="v">o</span></span><span class="syl c1">m<span class="v">a</span></span><span class="syl c0">t<span class="v">e</span></span></span></div><div class="frame"></div></div></div>
+</section><section class="page info">
+  <h1><span class="ico">💡</span>Hinweise für Erwachsene</h1>
+  <ul>
+    <li><b>Reihenfolge:</b> Die Blätter werden langsam schwerer: erst nur hören und klatschen (1–2), dann Silben lesen (3), dann Wörter (4–7), dann kleine Sätze (9). Ein bis zwei Blätter am Tag reichen.</li>
+    <li><b>Silben schwingen:</b> Wort laut sprechen und bei jeder Silbe mit dem Arm einen Bogen machen oder einen Schritt gehen. Das hilft mehr als nur Klatschen.</li>
+    <li><b>Farben:</b> 1. Silbe blau, 2. Silbe rot, 3. Silbe wieder blau – wie in der App. Die Selbstlaute (a, e, i, o, u, au, ei) sind gelb hinterlegt: Jede Silbe hat einen.</li>
+    <li><b>Buchstaben:</b> Die Wörter nutzen vor allem M, L, S, N, R, T, O, A, I, E, U. Kennt Ihr Kind einen Buchstaben noch nicht, lesen Sie ihn vor – das ist kein Fehler.</li>
+    <li><b>Lob statt Druck:</b> Lieber langsam und richtig. Gesprochene Laute ziehen („Mmmm-aaaa“ → „Ma“) hilft beim Zusammenschleifen.</li>
+  </ul>
+  <h2>Lösungen</h2>
+  <p><b>Blatt 1 (Bögen):</b> Maus 1, Ei 1, Hund 1, Fisch 1 · Sonne 2, Auto 2, Rose 2, Igel 2 · Banane 3, Tomate 3, Rakete 3, Melone 3</p>
+  <p><b>Blatt 2 (Zahl):</b> Krokodil 3, Löwe 2, Nase 2, Tiger 2, Oma 2, Ball 1, Sofa 2, Ananas 3, Haus 1, Mond 1, Hose 2, Elefant 3</p>
+  <p><b>Blatt 6 (fehlende Silbe):</b> Ro-<u>se</u>, O-<u>ma</u>, Au-<u>to</u>, So-<u>fa</u>, <u>Na</u>-se, I-<u>gel</u>, <u>Ti</u>-ger, Me-lo-<u>ne</u></p>
+  <p><b>Blatt 8 (Detektiv):</b> Ma 4×, Lo 5×, Si 4×, Ne 4×, Ru 5×</p>
+</section></body></html>
