@@ -144,19 +144,33 @@
 //  - Nach einem Fehler ist das Wort kurz gesperrt, die Silben werden nacheinander markiert („lies laut“).
 
 // ================= Daten =================
-const V = ['a', 'e', 'i', 'o', 'u'];
-const cv = (cons, vows = V) => cons.map(c => vows.map(v => c + v));
-const vc = (cons, vows = V) => cons.map(c => vows.map(v => v + c.toLowerCase()));
-const TEPPICHE = [
-  { name: 'M L S N',      rows: cv(['M', 'L', 'S', 'N']) },
-  { name: 'R T H F',      rows: cv(['R', 'T', 'H', 'F']) },
-  { name: 'W D B K',      rows: cv(['W', 'D', 'B', 'K']) },
-  { name: 'P G Z Sch',    rows: cv(['P', 'G', 'Z', 'Sch']) },
-  { name: 'au ei eu',     rows: cv(['M', 'L', 'S', 'N', 'R', 'H'], ['au', 'ei', 'eu']) },
-  { name: 'am im um …',   rows: vc(['M', 'L', 'N', 'S']).map(r => r.map(s => s[0].toUpperCase() + s.slice(1))) },
-  { name: 'Mix 1',        mix: [0, 1] },
-  { name: 'Mix 2',        mix: [0, 1, 2, 3] },
-];
+// Silbenteppiche werden aus den bekannten Buchstaben gebaut (Einstellung auf der Übersicht):
+// je 4 bekannte Mitlaute × bekannte Selbstlaute, dazu au/ei/eu, umgekehrte Silben (Am, Im …) und Mix.
+const T_CONS = ['M', 'L', 'S', 'N', 'R', 'T', 'H', 'F', 'D', 'W', 'Sch', 'P', 'K', 'B', 'G', 'Z', 'V', 'J'];
+const T_VOWS = ['a', 'e', 'i', 'o', 'u', 'ä', 'ö', 'ü'];
+function tSheets() {
+  const kc = T_CONS.filter(c => known.has(c.toUpperCase()));
+  const kv = T_VOWS.filter(v => known.has(v.toUpperCase()));
+  const kd = ['au', 'ei', 'eu'].filter(v => known.has(v.toUpperCase()));
+  const out = [];
+  if (kv.length) for (let i = 0; i < kc.length; i += 4) {
+    let group = kc.slice(i, i + 4);
+    if (group.length < 2 && out.length) { out[out.length - 1].cons.push(...group); continue; }
+    out.push({ cons: group, vows: kv });
+  }
+  const sheets = out.map(g => ({ name: g.cons.join(' '), cols: g.vows.length, cells: g.cons.flatMap(c => g.vows.map(v => c + v)) }));
+  if (kd.length) {
+    const cells = kc.slice(0, 8).flatMap(c => kd.map(v => c + v));
+    if (cells.length >= 6) sheets.push({ name: kd.join(' '), cols: kd.length === 1 ? 4 : kd.length, cells });
+  }
+  const vcCons = kc.filter(c => ['M', 'L', 'N', 'S', 'T', 'R'].includes(c)).slice(0, 4);
+  if (kv.length && vcCons.length >= 2)
+    sheets.push({ name: kv.slice(0, 3).map(v => v + vcCons[0].toLowerCase()).join(' ') + ' …', cols: kv.length,
+                  cells: vcCons.flatMap(c => kv.map(v => v.toUpperCase() + c.toLowerCase())) });
+  const cvAll = sheets.filter(t => !t.name.includes('…') && !kd.includes(t.name.split(' ')[0])).flatMap(t => t.cells);
+  if (sheets.length >= 2 && cvAll.length >= 20) sheets.push({ name: 'Mix', cols: 5, mix: cvAll });
+  return sheets;
+}
 // Gleiche Wörter wie in der Lese-App (index.html).
 const STUFEN = [
   ['leicht', [['Ma-ma','👩'], ['Pa-pa','👨'], ['O-ma','👵'], ['Ro-se','🌹'], ['Na-se','👃'], ['Ho-se','👖'],
@@ -174,15 +188,6 @@ const STUFEN = [
     ['Re-gen-bo-gen','🌈'], ['Hub-schrau-ber','🚁'], ['Scho-ko-la-de','🍫'], ['Ka-rot-te','🥕']]],
 ];
 const mkWord = ([h, e]) => ({ h, e, s: h.split('-'), w: h.replace(/-/g, '') });
-// Puzzle-Blätter: je 6 Wörter, ein Rest von 1–2 Wörtern kommt zum letzten Blatt dazu.
-const PUZZLES = STUFEN.flatMap(([stufe, ws]) => {
-  const words = ws.map(mkWord);
-  const out = [];
-  for (let i = 0; i < words.length; i += 6) out.push(words.slice(i, i + 6));
-  if (out.length > 1 && out[out.length - 1].length < 3) out[out.length - 2].push(...out.pop());
-  return out.map(words => ({ stufe, words }));
-});
-const ALL_SYLS = [...new Set(STUFEN.flatMap(([, ws]) => ws.flatMap(([h]) => h.toLowerCase().split('-'))))];
 
 // Wörter für „Verbinden“ und „Welches Bild passt?“. Nur Wörter aus bekannten Buchstaben kommen dran.
 const V_WORDS = [
@@ -203,6 +208,16 @@ const V_WORDS = [
   ['Zug','🚆'], ['Uhr','⌚'], ['Mü-cke','🦟'], ['Tul-pe','🌷'], ['Wol-ke','☁️'], ['Ker-ze','🕯️'], ['Dra-che','🐉'],
   ['Ta-sche','👜'], ['Lu-pe','🔍'], ['Kat-ze','🐱'], ['Bir-ne','🍐'],
 ].map(mkWord).filter((w, i, a) => a.findIndex(x => x.w === w.w) === i);
+// Puzzle: alle Wörter (App + Verbinden) mit mindestens 2 Silben, nur aus bekannten Buchstaben.
+const P_WORDS = [...V_WORDS, ...STUFEN.flatMap(([, ws]) => ws.map(mkWord))]
+  .filter((w, i, a) => w.s.length > 1 && a.findIndex(x => x.w === w.w) === i);
+function pSheets() {
+  const ok = P_WORDS.filter(readable).sort((a, b) => a.s.length - b.s.length || a.w.length - b.w.length);
+  const out = [];
+  for (let i = 0; i < ok.length; i += 6) out.push(ok.slice(i, i + 6));
+  if (out.length > 1 && out[out.length - 1].length < 3) out[out.length - 2].push(...out.pop());
+  return out.map(words => ({ stufe: Math.max(...words.map(w => w.s.length)) > 2 ? '3 Silben' : '2 Silben', words }));
+}
 // Laute/Buchstaben, so wie Kinder sie lernen (sch, ei, au … zählen als eigener Buchstabe).
 const LETTERS = ['A','E','I','O','U','M','L','S','N','R','T','H','F','D','W','EI','AU','SCH','CH','P','K','B','G','Z','Ä','Ö','Ü','EU','IE','V','J'];
 const DEFAULT_KNOWN = ['A','E','I','O','M','L','S','N','R','T','H','F','D','W','EI','SCH'];
@@ -331,11 +346,11 @@ function home() {
   $('back').hidden = true;
   const tile = (key, hash, big, sub, extra = '') =>
     `<button class="sheet${done[key] ? ' done' : ''}" onclick="location.hash='${hash}'"><span class="big">${done[key] ? '✅ ' : ''}${big}</span><span class="sub">${sub}${extra}</span></button>`;
-  const vs = vSheets();
+  const vs = vSheets(), ts = tSheets(), ps = pSheets();
   const vkey = ws => ws.map(w => w.w).join(',');
   const none = '<p class="muted">Zu wenige Wörter – bitte mehr Buchstaben einschalten.</p>';
   view.innerHTML = `
-    <div class="panel"><b>Buchstaben, die mein Kind schon kennt</b> <span class="muted">(antippen zum An- und Ausschalten – gilt für 🔗 und 🖼️)</span>
+    <div class="panel"><b>Buchstaben, die mein Kind schon kennt</b> <span class="muted">(antippen zum An- und Ausschalten – gilt für alle Blätter)</span>
       <div class="letters">${LETTERS.map(l => `<button class="letter${known.has(l) ? ' on' : ''}" data-l="${l}">${l[0] + l.slice(1).toLowerCase()}</button>`).join('')}</div>
       <span class="muted">${V_WORDS.filter(readable).length} passende Wörter</span></div>
     <h2>🖼️ Welches Bild passt? <span class="muted">– ein Wort, vier Bilder</span></h2>
@@ -343,9 +358,9 @@ function home() {
     <h2>🔗 Wörter und Bilder verbinden <span class="muted">– 5 Wörter, 8 Bilder</span></h2>
     <div class="sheets">${vs.length ? vs.map((ws, i) => tile('v:' + vkey(ws), 'v' + (i + 1), 'Blatt ' + (i + 1), ws.map(w => w.e).join(''))).join('') : none}</div>
     <h2>🟦 Silbenteppich <span class="muted">– mit Erwachsenem oder als Hörauftrag</span></h2>
-    <div class="sheets">${TEPPICHE.map((t, i) => tile('t' + i, 't' + (i + 1), 'Blatt ' + (i + 1), t.name, done['th' + i] ? ' · 👂✓' : '')).join('')}</div>
+    <div class="sheets">${ts.length ? ts.map((t, i) => tile('t:' + t.name, 't' + (i + 1), 'Blatt ' + (i + 1), t.name, done['th:' + t.name] ? ' · 👂✓' : '')).join('') : none}</div>
     <h2>🧩 Silbenpuzzle <span class="muted">– Wörter aus Silben legen</span></h2>
-    <div class="sheets">${PUZZLES.map((p, i) => tile('p' + i, 'p' + (i + 1), 'Blatt ' + (i + 1), p.stufe + ' · ' + p.words.map(w => w.e).join(''))).join('')}</div>
+    <div class="sheets">${ps.length ? ps.map((p, i) => tile('p:' + p.words.map(w => w.w).join(','), 'p' + (i + 1), 'Blatt ' + (i + 1), p.stufe + ' · ' + p.words.map(w => w.e).join(''))).join('') : none}</div>
     <p class="muted" style="margin-top:24px">✅ gibt es nur für Blätter ohne Fehler. Mit Fehlern kommt das Blatt neu gemischt noch einmal.
       Alles bleibt auf diesem Gerät gespeichert.
       <button style="min-height:40px;padding:6px 12px;font-size:.95rem" onclick="if(confirm('Alle Haken löschen?')){localStorage.removeItem('blatt-done');location.reload()}">Haken zurücksetzen</button></p>`;
@@ -361,14 +376,11 @@ function home() {
 // Modus „Erwachsener“: Das Kind liest vor, nur ein Erwachsener markiert (langer Druck) das Feld als richtig.
 // Modus „Hörauftrag“: Das Tablet spricht eine Silbe, das Kind sucht sie. Nach 2 Fehlern wird neu gemischt.
 function teppich(n) {
-  const t = TEPPICHE[n];
-  let grid = t.rows;
-  if (t.mix) {  // Mix-Blätter: Silben aus mehreren Teppichen, zufällig gemischt, 5 pro Reihe
-    const all = shuffle(t.mix.flatMap(i => TEPPICHE[i].rows.flat())).slice(0, 30);
-    grid = []; for (let i = 0; i < all.length; i += 5) grid.push(all.slice(i, i + 5));
-  }
-  const cols = grid[0].length;
-  let cells = grid.flatMap((r, ri) => r.map((s, ci) => ({ s, c: ri + ci, read: false })));
+  const all = tSheets(), t = all[n];
+  if (!t) { location.hash = ''; return; }
+  const cols = t.cols, tkey = 't:' + t.name, hkey = 'th:' + t.name;
+  const nextT = n + 1 < all.length ? 't' + (n + 2) : '';
+  let cells = (t.mix ? shuffle(t.mix).slice(0, 30) : t.cells).map((s, i) => ({ s, c: Math.floor(i / cols) + (i % cols), read: false }));
   let mode = store().get('teppich-mode', 'adult');
   const canSpeak = 'speechSynthesis' in window;
   if (!canSpeak) mode = 'adult';
@@ -420,7 +432,7 @@ function teppich(n) {
           const c = cells[+b.dataset.i];
           c.read = !c.read;
           render(c.read ? '✅ Richtig gelesen!' : '', 'ok');
-          if (cells.every(x => x.read)) finish($('fin'), 0, 't' + n, n + 1 < TEPPICHE.length ? 't' + (n + 2) : '', reset);
+          if (cells.every(x => x.read)) finish($('fin'), 0, tkey, nextT, reset);
         }, 700);
       });
       b.addEventListener('pointerup', () => {
@@ -450,8 +462,7 @@ function teppich(n) {
         if (cells.every(x => x.read)) {
           render('✅ Richtig!', 'ok');
           const again = () => { reset(); };
-          if (!totalErr) markDone('th' + n);
-          finish($('fin'), totalErr, 'th' + n, n + 1 < TEPPICHE.length ? 't' + (n + 2) : '', again);
+          finish($('fin'), totalErr, hkey, nextT, again);
           return;
         }
         render('✅ Richtig!', 'ok');
@@ -479,7 +490,11 @@ function teppich(n) {
 // Karten sind einfarbig und kleingeschrieben (verraten die Reihenfolge nicht), dazu falsche Silben.
 // Geprüft wird erst mit „Fertig – prüfen“. Ist eine Zeile falsch, gehen alle ihre Silben zurück.
 function puzzle(n) {
-  const p = PUZZLES[n];
+  const all = pSheets(), p = all[n];
+  if (!p) { location.hash = ''; return; }
+  const pkey = 'p:' + p.words.map(w => w.w).join(',');
+  // Falsche Silben nur aus bekannten Buchstaben
+  const ALL_SYLS = [...new Set(P_WORDS.filter(readable).flatMap(w => w.s.map(s => s.toLowerCase())))];
   $('title').textContent = `🧩 Silbenpuzzle – Blatt ${n + 1}`;
   $('back').hidden = false;
   let cards, rows, active, errors;
@@ -529,7 +544,7 @@ function puzzle(n) {
     });
     view.querySelectorAll('.karte').forEach(el => el.onclick = () => place(cards.find(c => c.id === +el.dataset.id)));
     if ($('check')) $('check').onclick = check;
-    if (solved === rows.length) finish($('fin'), errors, 'p' + n, n + 1 < PUZZLES.length ? 'p' + (n + 2) : '', start);
+    if (solved === rows.length) finish($('fin'), errors, pkey, n + 1 < all.length ? 'p' + (n + 2) : '', start);
   }
   function place(card) {
     let r = rows[active];
@@ -732,8 +747,8 @@ function route() {
   const m = location.hash.match(/^#([tpvb])(\d+)$/);
   window.scrollTo(0, 0);
   document.querySelectorAll('.confetti').forEach(c => c.remove());
-  if (m && m[1] === 't' && TEPPICHE[m[2] - 1]) return teppich(m[2] - 1);
-  if (m && m[1] === 'p' && PUZZLES[m[2] - 1]) return puzzle(m[2] - 1);
+  if (m && m[1] === 't') return teppich(m[2] - 1);
+  if (m && m[1] === 'p') return puzzle(m[2] - 1);
   if (m && m[1] === 'v') return verbinden(m[2] - 1);
   if (m && m[1] === 'b') return bild(m[2] - 1);
   home();
