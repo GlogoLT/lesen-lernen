@@ -79,6 +79,26 @@
   .pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 14px; border: 3px dashed var(--line); border-radius: 18px; }
   .karte { font-size: clamp(1.8rem, 5vw, 2.5rem); font-weight: 700; min-width: 96px; min-height: 76px; }
 
+
+  /* Verbinden */
+  .letters { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+  .letter { min-width: 62px; min-height: 52px; font-size: 1.35rem; font-weight: 700; padding: 6px 10px; opacity: .45; }
+  .letter.on { opacity: 1; background: var(--okbg); border-color: var(--ok); }
+  .panel { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 12px 16px; margin-bottom: 10px; }
+  .vb { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(70px, 24%) minmax(0, 1fr); row-gap: 14px; }
+  .vitem { display: flex; align-items: center; min-height: 92px; position: relative; touch-action: none; padding: 6px 14px; }
+  .vword { grid-column: 1; justify-content: center; font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 700; padding-bottom: 16px; }
+  .vpic { grid-column: 3; justify-content: center; font-size: clamp(2.6rem, 7vw, 3.6rem); line-height: 1; }
+  .vdot { position: absolute; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%; background: var(--ink); }
+  .vword .vdot { right: -11px; } .vpic .vdot { left: -11px; }
+  .vitem.sel { border-color: var(--accent); background: var(--act); outline: 3px solid var(--accent); }
+  .vitem.matched { border-color: var(--ok); background: var(--okbg); }
+  .vitem.matched .vdot { background: var(--ok); }
+  .vitem.wrong { animation: shake .4s; border-color: var(--bad); }
+  svg.vlines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  svg.vlines line { stroke-width: 7; stroke-linecap: round; }
+  .l-ok { stroke: var(--ok); } .l-bad { stroke: var(--bad); } .l-tmp { stroke: var(--accent); stroke-dasharray: 2 12; }
+
   .done-msg { text-align: center; font-size: 1.6rem; font-weight: 700; color: var(--ok); margin: 18px 0; }
   .done-msg .row { display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
   .done-msg button { font-size: 1.2rem; }
@@ -169,19 +189,162 @@ function doneBox(text, nextHash) {
     <button onclick="location.hash=''">Zur Übersicht</button></div></div>`;
 }
 
+
+// ================= Verbinden: Wörter und Bilder =================
+// Nur Wörter, deren Buchstaben das Kind schon kennt (Einstellung auf der Übersicht).
+const V_WORDS = [
+  ['Ma-ma','👩'], ['O-ma','👵'], ['Ro-se','🌹'], ['Na-se','👃'], ['Ho-se','👖'], ['So-fa','🛋️'], ['La-ma','🦙'],
+  ['No-te','🎵'], ['Me-lo-ne','🍈'], ['To-ma-te','🍅'], ['A-na-nas','🍍'], ['Son-ne','☀️'], ['Sa-lat','🥗'],
+  ['In-sel','🏝️'], ['Lei-ter','🪜'], ['A-mei-se','🐜'], ['Ei-mer','🪣'], ['Ha-se','🐇'], ['Tas-se','☕'],
+  ['Na-del','🪡'], ['Tel-ler','🍽️'], ['Ham-mer','🔨'], ['Tan-ne','🌲'], ['La-ter-ne','🏮'], ['Fe-der','🪶'],
+  ['Do-se','🥫'], ['En-te','🦆'], ['Sei-fe','🧼'], ['Wol-le','🧶'], ['Sche-re','✂️'], ['Ei','🥚'], ['Eis','🍦'],
+  ['Mond','🌙'], ['Hand','✋'], ['Fisch','🐟'], ['Schaf','🐑'], ['Schal','🧣'], ['Wal','🐳'], ['Wolf','🐺'],
+  ['Stern','⭐'], ['Fee','🧚'], ['Nas-horn','🦏'], ['Hirsch','🦌'], ['Frosch','🐸'], ['Schlit-ten','🛷'], ['Fa-den','🧵'],
+  // Für später, wenn weitere Buchstaben dazukommen:
+  ['Au-to','🚗'], ['Maus','🐭'], ['Haus','🏠'], ['Hut','👒'], ['Pa-pa','👨'], ['O-pa','👴'], ['Lam-pe','💡'],
+  ['Ti-ger','🐯'], ['I-gel','🦔'], ['Ba-na-ne','🍌'], ['Kat-ze','🐱'], ['Blu-me','🌸'], ['Hund','🐶'], ['Ball','⚽'],
+  ['Ku-chen','🍰'], ['Kä-se','🧀'], ['Ze-bra','🦓'], ['Gur-ke','🥒'], ['Bir-ne','🍐'], ['Ap-fel','🍎'], ['Lö-we','🦁'],
+  ['Ra-ke-te','🚀'], ['Kro-ko-dil','🐊'], ['Ka-mel','🐪'], ['Sup-pe','🍲'], ['Pil-ze','🍄'], ['Gi-raf-fe','🦒'],
+  ['E-le-fant','🐘'], ['Zi-tro-ne','🍋'], ['Pin-gu-in','🐧'], ['Bus','🚌'], ['Buch','📖'], ['Baum','🌳'], ['Kuh','🐄'],
+  ['Zug','🚆'], ['Uhr','⌚'], ['Mü-cke','🦟'], ['Tul-pe','🌷'], ['Wol-ke','☁️'], ['Ker-ze','🕯️'], ['Dra-che','🐉'],
+].map(([h, e]) => ({ h, e, s: h.split('-'), w: h.replace(/-/g, '') }));
+// Laute/Buchstaben, so wie Kinder sie lernen (sch, ei, au … zählen als eigener Buchstabe).
+const LETTERS = ['A','E','I','O','U','M','L','S','N','R','T','H','F','D','W','EI','AU','SCH','CH','P','K','B','G','Z','Ä','Ö','Ü','EU','IE','V','J'];
+const DEFAULT_KNOWN = ['A','E','I','O','M','L','S','N','R','T','H','F','D','W','EI','SCH'];
+function lettersOf(word) {
+  const w = word.toLowerCase().replace(/ck/g, 'k'), out = new Set();
+  for (let i = 0; i < w.length;) {
+    const t = ['sch', 'ch', 'ei', 'au', 'eu', 'ie'].find(t => w.startsWith(t, i)) || w[i];
+    out.add(t.toUpperCase()); i += t.length;
+  }
+  return out;
+}
+let known = new Set(store.get('letters-known', DEFAULT_KNOWN));
+// Blätter mit je 5 Wörtern, kurze Wörter zuerst (Reihenfolge der Liste bei gleicher Länge).
+function vSheets() {
+  const ok = V_WORDS.filter(w => [...lettersOf(w.w)].every(l => known.has(l)));
+  ok.sort((a, b) => a.w.length - b.w.length || a.s.length - b.s.length);
+  const out = [];
+  for (let i = 0; i < ok.length; i += 5) out.push(ok.slice(i, i + 5));
+  if (out.length > 1 && out[out.length - 1].length < 3) out[out.length - 2].push(...out.pop());
+  return out;
+}
+const wordSyl = w => w.s.map((s, k) => syl(s, k, true)).join('');
+
+function verbinden(n) {
+  const words = vSheets()[n];
+  if (!words) { location.hash = ''; return; }
+  const key = 'v:' + words.map(w => w.w).join(',');
+  $('title').textContent = `🔗 Verbinden – Blatt ${n + 1}`;
+  $('back').hidden = false;
+  const left = shuffle(words);
+  let right = shuffle(words);
+  for (let t = 0; t < 30 && right.some((w, i) => w === left[i]); t++) right = shuffle(words);
+  const matched = new Set();   // Wörter (Objekte), die schon richtig verbunden sind
+  view.innerHTML = `
+    <p class="task">Lies das Wort. Zieh mit dem Finger eine Linie zum passenden Bild – oder tippe erst das Wort und dann das Bild an.</p>
+    <div class="bar"><span class="count" id="vcount"></span></div>
+    <div class="vb" id="vb">
+      ${left.map((w, i) => `<button class="vitem vword" style="grid-row:${i + 1}" data-side="w" data-i="${i}">${wordSyl(w)}<span class="vdot"></span></button>`).join('')}
+      ${right.map((w, i) => `<button class="vitem vpic" style="grid-row:${i + 1}" data-side="p" data-i="${i}">${w.e}<span class="vdot"></span></button>`).join('')}
+      <svg class="vlines" id="vlines"></svg>
+    </div>
+    <div id="fin"></div>`;
+  const vb = $('vb'), svg = $('vlines');
+  const itemOf = el => el && el.closest && el.closest('.vitem');
+  const wordOf = el => (el.dataset.side === 'w' ? left : right)[+el.dataset.i];
+  const dotPos = el => {
+    const d = el.querySelector('.vdot').getBoundingClientRect(), b = vb.getBoundingClientRect();
+    return [d.left + d.width / 2 - b.left, d.top + d.height / 2 - b.top];
+  };
+  const line = (a, b, cls) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="${cls}"/>`;
+  let sel = null, start = null, startXY = null, dragging = false, extra = '';
+  function draw(tmp = '') {
+    const els = [...vb.querySelectorAll('.vitem')];
+    let out = '';
+    matched.forEach(w => {
+      const a = els.find(e => e.dataset.side === 'w' && wordOf(e) === w), b = els.find(e => e.dataset.side === 'p' && wordOf(e) === w);
+      out += line(dotPos(a), dotPos(b), 'l-ok');
+    });
+    svg.innerHTML = out + extra + tmp;
+    els.forEach(e => {
+      e.classList.toggle('matched', matched.has(wordOf(e)));
+      e.classList.toggle('sel', e === sel);
+    });
+    $('vcount').textContent = `${matched.size} von ${words.length} ✓`;
+  }
+  function connect(a, b) {
+    sel = null;
+    if (!a || !b || a.dataset.side === b.dataset.side) return draw();
+    if (matched.has(wordOf(a)) || matched.has(wordOf(b))) return draw();
+    if (wordOf(a) === wordOf(b)) {
+      matched.add(wordOf(a)); draw();
+      if (matched.size === words.length) {
+        markDone(key); confetti();
+        const more = n + 1 < vSheets().length;
+        $('fin').innerHTML = doneBox('🎉 Super! Alles richtig verbunden!', more ? 'v' + (n + 2) : '');
+      }
+      return;
+    }
+    // Falsch: rote Linie kurz zeigen, dann weg.
+    extra = line(dotPos(a), dotPos(b), 'l-bad');
+    [a, b].forEach(e => { e.classList.remove('wrong'); void e.offsetWidth; e.classList.add('wrong'); });
+    draw();
+    setTimeout(() => { extra = ''; [a, b].forEach(e => e.classList.remove('wrong')); draw(); }, 800);
+  }
+  vb.addEventListener('pointerdown', e => {
+    const it = itemOf(e.target);
+    if (!it || matched.has(wordOf(it))) return;
+    start = it; startXY = [e.clientX, e.clientY]; dragging = false;
+    try { vb.setPointerCapture(e.pointerId); } catch {}
+  });
+  vb.addEventListener('pointermove', e => {
+    if (!start) return;
+    if (!dragging && Math.hypot(e.clientX - startXY[0], e.clientY - startXY[1]) > 12) dragging = true;
+    if (dragging) {
+      const b = vb.getBoundingClientRect();
+      draw(line(dotPos(start), [e.clientX - b.left, e.clientY - b.top], 'l-tmp'));
+    }
+  });
+  vb.addEventListener('pointerup', e => {
+    if (!start) return;
+    const s0 = start; start = null;
+    if (dragging) return connect(s0, itemOf(document.elementFromPoint(e.clientX, e.clientY)));
+    // Tippen: erst eine Seite wählen, dann die andere
+    if (sel && sel.dataset.side !== s0.dataset.side) return connect(sel, s0);
+    sel = sel === s0 ? null : s0; draw();
+  });
+  vb.addEventListener('pointercancel', () => { start = null; draw(); });
+  addEventListener('resize', () => vb.isConnected && draw());
+  draw();
+}
+
 // ================= Übersicht =================
 function home() {
   $('title').textContent = '📄 Silben-Blätter';
   $('back').hidden = true;
   const tile = (key, hash, big, sub) =>
     `<button class="sheet${done[key] ? ' done' : ''}" onclick="location.hash='${hash}'"><span class="big">${done[key] ? '✅ ' : ''}${big}</span><span class="sub">${sub}</span></button>`;
+  const vs = vSheets();
   view.innerHTML = `
+    <h2>🔗 Wörter und Bilder verbinden <span class="muted">– nur mit bekannten Buchstaben</span></h2>
+    <div class="panel"><b>Buchstaben, die mein Kind schon kennt</b> <span class="muted">(antippen zum An- und Ausschalten)</span>
+      <div class="letters">${LETTERS.map(l => `<button class="letter${known.has(l) ? ' on' : ''}" data-l="${l}">${l === 'ß' ? l : l[0] + l.slice(1).toLowerCase()}</button>`).join('')}</div>
+      <span class="muted">${V_WORDS.filter(w => [...lettersOf(w.w)].every(l => known.has(l))).length} passende Wörter</span></div>
+    <div class="sheets">${vs.length ? vs.map((ws, i) => tile('v:' + ws.map(w => w.w).join(','), 'v' + (i + 1), 'Blatt ' + (i + 1), ws.map(w => w.e).join(''))).join('')
+      : '<p class="muted">Zu wenige Wörter – bitte mehr Buchstaben einschalten.</p>'}</div>
     <h2>🟦 Silbenteppich <span class="muted">– Silben lesen und antippen</span></h2>
     <div class="sheets">${TEPPICHE.map((t, i) => tile('t' + i, 't' + (i + 1), 'Blatt ' + (i + 1), t.name)).join('')}</div>
     <h2>🧩 Silbenpuzzle <span class="muted">– Wörter aus Silben legen</span></h2>
     <div class="sheets">${PUZZLES.map((p, i) => tile('p' + i, 'p' + (i + 1), 'Blatt ' + (i + 1), p.stufe + ' · ' + p.words.map(w => w.e).join(''))).join('')}</div>
     <p class="muted" style="margin-top:24px">Fertige Blätter bekommen einen grünen Haken. Alles bleibt auf diesem Gerät gespeichert.
       <button style="min-height:40px;padding:6px 12px;font-size:.95rem" onclick="if(confirm('Alle Haken löschen?')){localStorage.removeItem('blatt-done');location.reload()}">Haken zurücksetzen</button></p>`;
+  view.querySelectorAll('.letter').forEach(b => b.onclick = () => {
+    const l = b.dataset.l;
+    known.has(l) ? known.delete(l) : known.add(l);
+    store.set('letters-known', [...known]);
+    const y = scrollY; home(); scrollTo(0, y);
+  });
 }
 
 // ================= Silbenteppich =================
@@ -299,11 +462,12 @@ function puzzle(n) {
 
 // ================= Navigation =================
 function route() {
-  const m = location.hash.match(/^#([tp])(\d+)$/);
+  const m = location.hash.match(/^#([tpv])(\d+)$/);
   window.scrollTo(0, 0);
   document.querySelectorAll('.confetti').forEach(c => c.remove());
   if (m && m[1] === 't' && TEPPICHE[m[2] - 1]) return teppich(m[2] - 1);
   if (m && m[1] === 'p' && PUZZLES[m[2] - 1]) return puzzle(m[2] - 1);
+  if (m && m[1] === 'v') return verbinden(m[2] - 1);
   home();
 }
 $('back').onclick = () => { location.hash = ''; };

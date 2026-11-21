@@ -1,6 +1,6 @@
 // Service Worker: legt die ganze App inkl. Sprachmodell auf dem Gerät ab, damit sie offline läuft.
 // Nach Änderungen an der App die Versionsnummer erhöhen, dann holen sich Geräte die neue Fassung.
-const CACHE = 'lesen-v6';
+const CACHE = 'lesen-v7';
 const FILES = [
   './', 'index.html', 'blaetter.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png',
   'vosk/vosk.js', 'vosk/model-de.tar.gz'
