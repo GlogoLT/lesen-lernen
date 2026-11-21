@@ -1,0 +1,88 @@
+@page { size: A4; margin: 0; }
+:root { --b: #1d4ed8; --r: #dc2626; --v: #fde68a; --ink: #222; --line: #b9b2a5; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Andika', 'DejaVu Sans', sans-serif; color: var(--ink); background: #fff;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; counter-reset: blatt; }
+.page { width: 210mm; height: 297mm; padding: 11mm 13mm 15mm; page-break-after: always; overflow: hidden;
+  display: flex; flex-direction: column; counter-increment: blatt; position: relative; }
+.page::after { content: 'Blatt ' counter(blatt); position: absolute; bottom: 7mm; right: 13mm; font-size: 10pt; color: #999; }
+header { display: flex; gap: 10mm; font-size: 12pt; color: #555; }
+.name { display: flex; align-items: flex-end; gap: 2mm; }
+.ln { display: inline-block; width: 70mm; border-bottom: 1px solid #888; height: 1em; }
+.ln.short { width: 35mm; }
+h1 { font-size: 26pt; margin: 6mm 0 2mm; display: flex; align-items: center; gap: 4mm; }
+h1 .ico, .pic { font-family: 'Noto Color Emoji'; }
+.task { font-size: 14pt; line-height: 1.4; margin: 0 0 5mm; padding: 3mm 4mm; background: #f4f1ea; border-radius: 3mm; }
+h2 { font-size: 18pt; margin: 8mm 0 3mm; }
+
+/* Silben */
+.word { white-space: nowrap; display: inline-flex; }
+.syl { position: relative; padding: 0 0.06em; }
+.colors .c0 { color: var(--b); } .colors .c1 { color: var(--r); }
+.arcs .syl::after { content: ''; position: absolute; left: 10%; right: 10%; bottom: -0.32em; height: 0.36em;
+  border: 0.07em solid currentColor; border-top: 0; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+.vowels .v { text-decoration: underline; text-decoration-color: var(--v); text-decoration-thickness: 0.32em; text-underline-offset: -0.2em; text-decoration-skip-ink: none; }
+
+.pic { font-size: 46pt; line-height: 1; text-align: center; }
+.pic.sm { font-size: 34pt; }
+.grid { display: grid; gap: 4mm; flex: 1; }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cell { border: 0.6mm solid #ddd6c8; border-radius: 4mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3mm; }
+.cell.row { flex-direction: row; justify-content: flex-start; gap: 6mm; padding: 3mm 5mm; }
+.arcbox { width: 100%; height: 16mm; border: 0.5mm dashed var(--line); border-radius: 2mm; }
+
+.example { display: flex; align-items: center; gap: 5mm; font-size: 20pt; margin-bottom: 5mm; padding: 2mm 5mm;
+  border: 0.6mm dashed #9cb5e6; border-radius: 4mm; background: #f5f8ff; }
+.example svg path { fill: none; stroke-width: 3.5; stroke-linecap: round; }
+.example .a0 { stroke: var(--b); } .example .a1 { stroke: var(--r); }
+.example .big { font-size: 34pt; padding-bottom: 4mm; }
+.example .hint { font-size: 13pt; color: #557; margin-left: auto; }
+
+.count { display: flex; gap: 4mm; margin-left: auto; }
+.count span { width: 14mm; height: 14mm; border: 0.6mm solid #999; border-radius: 50%; display: grid; place-items: center; font-size: 22pt; }
+
+.plain { font-size: 34pt; letter-spacing: 0.02em; padding-bottom: 9mm; border-bottom: 0.4mm dotted var(--line); flex: 1; text-align: center; }
+.tall .cell { min-height: 0; }
+
+table.teppich { border-collapse: separate; border-spacing: 2.5mm; width: 100%; flex: 1; }
+.teppich td { border: 0.6mm solid #ddd6c8; border-radius: 3mm; text-align: center; font-size: 34pt; }
+
+.links { display: flex; flex-direction: column; gap: 5mm; flex: 1; justify-content: space-around; }
+.link { display: flex; align-items: center; gap: 4mm; }
+.sum { font-size: 28pt; display: flex; gap: 3mm; align-items: center; width: 66mm; padding-bottom: 3mm; }
+.sum b { color: #666; font-weight: 400; }
+.wline { width: 45mm; border-bottom: 0.5mm solid #777; height: 12mm; }
+.dot { font-size: 14pt; color: #444; }
+.gap { flex: 1; }
+
+.bank { display: flex; justify-content: center; gap: 7mm; flex-wrap: wrap; font-size: 26pt; padding: 3mm; margin-bottom: 5mm;
+  border: 0.8mm solid #e8c766; border-radius: 4mm; background: #fffaeb; }
+.gw { font-size: 30pt; display: flex; align-items: center; gap: 2mm; padding-bottom: 3mm; }
+.slot { display: inline-block; width: 24mm; height: 15mm; border: 0.6mm solid; border-radius: 2mm; }
+.slot.c0 { border-color: var(--b); } .slot.c1 { border-color: var(--r); }
+
+.puzz { flex: 0 0 auto; gap: 3mm; }
+.puz .pic.sm { font-size: 28pt; }
+.puz { gap: 2mm; padding: 2mm 3mm; }
+.puz { padding: 2mm 4mm; }
+.slots { display: flex; gap: 1.5mm; }
+.pslot { width: 19mm; height: 17mm; border: 0.5mm dashed; border-radius: 2mm; }
+.pslot.c0 { border-color: var(--b); } .pslot.c1 { border-color: var(--r); }
+.cut { margin: 6mm 0 2mm; color: #888; white-space: nowrap; overflow: hidden; font-size: 12pt; }
+.cards { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 0.4mm dashed #888; border-left: 0.4mm dashed #888; }
+.card { height: 28mm; font-size: 30pt; display: grid; place-items: center; font-size: 26pt; border-right: 0.4mm dashed #888; border-bottom: 0.4mm dashed #888; }
+
+.dets { display: flex; flex-direction: column; gap: 6mm; flex: 1; justify-content: space-around; }
+.det { display: flex; align-items: center; gap: 5mm; }
+.tgt { font-size: 28pt; border: 0.8mm solid #e8c766; background: #fffaeb; border-radius: 3mm; padding: 1mm 4mm; }
+.seq { display: flex; justify-content: space-between; font-size: 23pt; flex: 1; }
+.det::after { flex-shrink: 0; content: ''; width: 14mm; height: 14mm; border: 0.6mm solid #999; border-radius: 2mm; }
+
+.draw { border: 0.6mm solid #ddd6c8; border-radius: 4mm; padding: 4mm; display: flex; flex-direction: column; gap: 4mm; }
+.sent { font-size: 26pt; padding-bottom: 3mm; display: flex; gap: 4mm; flex-wrap: wrap; }
+.frame { flex: 1; border: 0.5mm dashed var(--line); border-radius: 2mm; }
+
+.info ul { font-size: 13pt; line-height: 1.5; padding-left: 6mm; }
+.info li { margin-bottom: 2.5mm; }
+.info p { font-size: 12.5pt; line-height: 1.5; margin: 1.5mm 0; }

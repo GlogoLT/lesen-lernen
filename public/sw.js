@@ -1,8 +1,8 @@
 // Service Worker: legt die ganze App inkl. Sprachmodell auf dem Gerät ab, damit sie offline läuft.
 // Nach Änderungen an der App die Versionsnummer erhöhen, dann holen sich Geräte die neue Fassung.
-const CACHE = 'lesen-v5';
+const CACHE = 'lesen-v6';
 const FILES = [
-  './', 'index.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png',
+  './', 'index.html', 'blaetter.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png',
   'vosk/vosk.js', 'vosk/model-de.tar.gz'
 ];
 
@@ -22,7 +22,8 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   // Seite selbst: erst Netz (für Updates), sonst gespeicherte Fassung. Alles andere: erst Speicher.
   if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request).catch(() => caches.match('index.html')));
+    e.respondWith(fetch(e.request).catch(() =>
+      caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match('index.html'))));
     return;
   }
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(r => r || fetch(e.request)));
