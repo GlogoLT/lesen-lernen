@@ -12,23 +12,23 @@
 <style>
   :root {
     --bg: #fdf8f0; --card: #ffffff; --ink: #2b2b2b; --muted: #6b6b6b; --line: #e5e0d6;
-    --accent: #3b82f6; --ok: #16a34a; --okbg: #dcfce7; --bad: #dc2626; --warn: #d97706;
-    --syl0: #1d4ed8; --syl1: #dc2626; --vowel: #fde68a; --slot: #f3efe6; --act: #e0f2fe;
+    --accent: #3b82f6; --ok: #16a34a; --okbg: #dcfce7; --bad: #dc2626; --badbg: #fee2e2; --warn: #b45309;
+    --syl0: #1d4ed8; --syl1: #dc2626; --vowel: #fde68a; --slot: #f3efe6; --act: #e0f2fe; --hl: #fef08a;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #1b1d22; --card: #262a31; --ink: #f1f1f1; --muted: #a3a3a3; --line: #3a3f48; --okbg: #14361f;
-      --syl0: #60a5fa; --syl1: #f87171; --vowel: #713f12; --slot: #1f2329; --act: #0c4a6e;
+      --bg: #1b1d22; --card: #262a31; --ink: #f1f1f1; --muted: #a3a3a3; --line: #3a3f48; --okbg: #14361f; --badbg: #3f1d1d;
+      --syl0: #60a5fa; --syl1: #f87171; --vowel: #713f12; --slot: #1f2329; --act: #0c4a6e; --hl: #713f12; --warn: #fbbf24;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #1b1d22; --card: #262a31; --ink: #f1f1f1; --muted: #a3a3a3; --line: #3a3f48; --okbg: #14361f;
-    --syl0: #60a5fa; --syl1: #f87171; --vowel: #713f12; --slot: #1f2329; --act: #0c4a6e;
+    --bg: #1b1d22; --card: #262a31; --ink: #f1f1f1; --muted: #a3a3a3; --line: #3a3f48; --okbg: #14361f; --badbg: #3f1d1d;
+    --syl0: #60a5fa; --syl1: #f87171; --vowel: #713f12; --slot: #1f2329; --act: #0c4a6e; --hl: #713f12; --warn: #fbbf24;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { touch-action: manipulation; }
   body { margin: 0; font-family: 'Andika', ui-rounded, system-ui, sans-serif; background: var(--bg); color: var(--ink);
-         user-select: none; -webkit-user-select: none; }
+         user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; max-width: 1100px; margin: 0 auto; flex-wrap: wrap; }
   h1 { font-size: 1.5rem; margin: 0; flex: 1; }
   h2 { font-size: 1.3rem; margin: 22px 0 10px; }
@@ -36,10 +36,18 @@
   button { font: inherit; font-size: 1.15rem; border-radius: 16px; padding: 12px 18px; background: var(--card); color: var(--ink);
            border: 2px solid var(--line); cursor: pointer; min-height: 56px; }
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.on { background: var(--act); border-color: var(--accent); font-weight: 700; }
   .task { font-size: 1.25rem; margin: 0 0 14px; padding: 12px 16px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; }
   .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
   .bar .count { font-size: 1.2rem; font-weight: 700; margin-left: auto; }
   .muted { color: var(--muted); }
+  .msg { min-height: 1.5em; font-size: 1.3rem; font-weight: 700; text-align: center; margin: 12px 0; }
+  .msg.ok { color: var(--ok); } .msg.bad { color: var(--bad); } .msg.warn { color: var(--warn); }
+  .checkrow { display: flex; justify-content: center; margin: 16px 0; }
+  .checkrow button { font-size: 1.35rem; min-width: 280px; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .shake { animation: shake .4s; }
 
   /* Übersicht */
   .sheets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
@@ -47,41 +55,77 @@
   .sheet .big { font-size: 1.7rem; font-weight: 700; }
   .sheet .sub { font-size: .95rem; color: var(--muted); }
   .sheet.done { background: var(--okbg); border-color: var(--ok); }
+  .letters { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+  .letter { min-width: 62px; min-height: 52px; font-size: 1.35rem; font-weight: 700; padding: 6px 10px; opacity: .45; }
+  .letter.on { opacity: 1; background: var(--okbg); border-color: var(--ok); }
+  .panel { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 12px 16px; margin-bottom: 10px; }
 
   /* Silben */
-  .syl { position: relative; padding: 0 .06em; }
+  .syl { position: relative; padding: 0 .06em; border-radius: 8px; transition: background .2s, transform .2s; }
   .c0 { color: var(--syl0); } .c1 { color: var(--syl1); }
   .v { box-shadow: inset 0 -0.36em var(--vowel); border-radius: 3px; }
   .arcs .syl::after { content: ''; position: absolute; left: 10%; right: 10%; bottom: -0.3em; height: .34em;
     border: .07em solid currentColor; border-top: 0; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+  .syl.hl { background: var(--hl); transform: scale(1.12); }
+  .locked { pointer-events: none; }
+  .lockinfo { font-size: 1rem; font-weight: 600; color: var(--warn); }
 
   /* Silbenteppich */
   .teppich { display: grid; gap: 10px; }
-  .feld { font-size: clamp(1.9rem, 6vw, 3rem); font-weight: 700; min-height: clamp(64px, 11vw, 96px); padding: 4px; position: relative; }
+  .feld { font-size: clamp(1.9rem, 6vw, 3rem); font-weight: 700; min-height: clamp(64px, 11vw, 96px); padding: 4px; position: relative;
+          -webkit-touch-callout: none; }
   .feld.read { background: var(--okbg); border-color: var(--ok); }
   .feld.read::after { content: '✓'; position: absolute; top: 2px; right: 8px; font-size: 1.1rem; color: var(--ok); }
+  .feld.wrongf { background: var(--badbg); border-color: var(--bad); }
+  .feld .ring { position: absolute; left: 0; bottom: 0; height: 6px; width: 0; background: var(--ok); border-radius: 0 0 0 14px; }
+  .feld.pressing .ring { width: 100%; transition: width .7s linear; }
+  .teppich.locked .feld:not(.read) { opacity: .55; }
 
   /* Silbenpuzzle */
-  .rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 10px; margin-bottom: 8px; }
   .prow { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--card); border: 3px solid var(--line);
-          border-radius: 18px; min-height: 92px; cursor: pointer; }
+          border-radius: 18px; min-height: 92px; cursor: pointer; flex-wrap: wrap; }
   .prow.active { border-color: var(--accent); background: var(--act); }
   .prow.solved { border-color: var(--ok); background: var(--okbg); cursor: default; }
+  .prow.locked { border-color: var(--bad); background: var(--badbg); }
   .prow .pic { font-size: 3rem; line-height: 1; width: 64px; text-align: center; flex-shrink: 0; }
   .pslots { display: flex; gap: 6px; flex-wrap: wrap; }
-  .pslot { min-width: 84px; height: 66px; border: 3px dashed var(--line); border-radius: 14px; background: var(--slot);
+  .pslot { min-width: 84px; height: 66px; border: 3px dashed var(--line); border-radius: 14px; background: var(--slot); color: var(--ink);
            display: flex; align-items: center; justify-content: center; font-size: clamp(1.7rem, 4.5vw, 2.3rem); font-weight: 700; padding: 0 8px; }
-  .pslot.filled { border-style: solid; background: var(--card); }
-  .pslot.filled.c0 { border-color: var(--syl0); } .pslot.filled.c1 { border-color: var(--syl1); }
-  .pslot.wrong { animation: shake .4s; border-color: var(--bad) !important; }
-  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .pslot.filled { border-style: solid; background: var(--card); border-color: var(--ink); }
   .solvedword { font-size: clamp(1.9rem, 5vw, 2.5rem); font-weight: 700; padding-bottom: 12px; }
   .pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 14px; border: 3px dashed var(--line); border-radius: 18px; }
   .karte { font-size: clamp(1.8rem, 5vw, 2.5rem); font-weight: 700; min-width: 96px; min-height: 76px; }
 
-  .done-msg { text-align: center; font-size: 1.6rem; font-weight: 700; color: var(--ok); margin: 18px 0; }
+  /* Verbinden */
+  .vb { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(70px, 22%) minmax(0, 1fr); }
+  .vcol { display: flex; flex-direction: column; justify-content: space-around; gap: 10px; }
+  .vcol.l { grid-column: 1; } .vcol.r { grid-column: 3; }
+  .vitem { display: flex; align-items: center; justify-content: center; min-height: 80px; position: relative; touch-action: none; padding: 6px 14px; }
+  .vword { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 700; padding-bottom: 16px; min-height: 96px; }
+  .vpic { font-size: clamp(2.4rem, 6.5vw, 3.2rem); line-height: 1; }
+  .vdot { position: absolute; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%; background: var(--ink); }
+  .vword .vdot { right: -11px; } .vpic .vdot { left: -11px; }
+  .vitem.sel { border-color: var(--accent); background: var(--act); outline: 3px solid var(--accent); }
+  .vitem.good { border-color: var(--ok); background: var(--okbg); }
+  .vitem.good .vdot { background: var(--ok); }
+  .vitem.bad { border-color: var(--bad); background: var(--badbg); }
+  svg.vlines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  svg.vlines line { stroke-width: 7; stroke-linecap: round; }
+  .l-ok { stroke: var(--ok); } .l-bad { stroke: var(--bad); } .l-on { stroke: var(--accent); } .l-tmp { stroke: var(--accent); stroke-dasharray: 2 12; }
+
+  /* Welches Bild passt? */
+  .bigword { text-align: center; font-size: clamp(3rem, 10vw, 4.6rem); font-weight: 700; margin: 10px 0 34px; }
+  .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 640px; margin: 0 auto; }
+  .choice { font-size: clamp(3.4rem, 11vw, 5rem); line-height: 1; min-height: 140px; }
+  .choice.good { background: var(--okbg); border-color: var(--ok); }
+  .choice.bad { background: var(--badbg); border-color: var(--bad); }
+
+  .done-msg { text-align: center; font-size: 1.5rem; font-weight: 700; margin: 18px 0; }
+  .done-msg.ok { color: var(--ok); } .done-msg.warn { color: var(--warn); }
   .done-msg .row { display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
   .done-msg button { font-size: 1.2rem; }
+  .done-msg .small { font-size: 1.05rem; font-weight: 400; color: var(--muted); margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -93,9 +137,11 @@
 <main id="view"></main>
 
 <script>
-// Interaktive Arbeitsblätter fürs Tablet, ohne Spracherkennung und ohne Ton.
-// Silbenteppich: Silbe laut lesen, dann antippen → das Feld wird grün.
-// Silbenpuzzle: Silbenkarten antippen → sie wandern auf den nächsten freien Platz der markierten Zeile.
+// Interaktive Arbeitsblätter fürs Tablet (ohne Spracherkennung).
+// Grundsatz: Belohnt wird richtiges Lesen, nicht Durchprobieren.
+//  - Geprüft wird erst am Ende („Fertig – prüfen“), nicht nach jedem Versuch.
+//  - Den grünen Haken gibt es nur für ein fehlerfreies Blatt; mit Fehlern kommt es neu gemischt noch einmal.
+//  - Nach einem Fehler ist das Wort kurz gesperrt, die Silben werden nacheinander markiert („lies laut“).
 
 // ================= Daten =================
 const V = ['a', 'e', 'i', 'o', 'u'];
@@ -127,27 +173,101 @@ const STUFEN = [
     ['Ro-bo-ter','🤖'], ['Pa-pa-gei','🦜'], ['Schmet-ter-ling','🦋'], ['Schild-krö-te','🐢'], ['Pin-gu-in','🐧'],
     ['Re-gen-bo-gen','🌈'], ['Hub-schrau-ber','🚁'], ['Scho-ko-la-de','🍫'], ['Ka-rot-te','🥕']]],
 ];
-// Puzzle-Blätter: je 6 Wörter, ein Rest von 1 Wort kommt zum letzten Blatt dazu.
+const mkWord = ([h, e]) => ({ h, e, s: h.split('-'), w: h.replace(/-/g, '') });
+// Puzzle-Blätter: je 6 Wörter, ein Rest von 1–2 Wörtern kommt zum letzten Blatt dazu.
 const PUZZLES = STUFEN.flatMap(([stufe, ws]) => {
-  const words = ws.map(([h, e]) => ({ s: h.split('-'), e, w: h.replace(/-/g, '') }));
+  const words = ws.map(mkWord);
   const out = [];
   for (let i = 0; i < words.length; i += 6) out.push(words.slice(i, i + 6));
   if (out.length > 1 && out[out.length - 1].length < 3) out[out.length - 2].push(...out.pop());
   return out.map(words => ({ stufe, words }));
 });
+const ALL_SYLS = [...new Set(STUFEN.flatMap(([, ws]) => ws.flatMap(([h]) => h.toLowerCase().split('-'))))];
+
+// Wörter für „Verbinden“ und „Welches Bild passt?“. Nur Wörter aus bekannten Buchstaben kommen dran.
+const V_WORDS = [
+  ['Ma-ma','👩'], ['O-ma','👵'], ['Ro-se','🌹'], ['Na-se','👃'], ['Ho-se','👖'], ['So-fa','🛋️'], ['La-ma','🦙'],
+  ['No-te','🎵'], ['Me-lo-ne','🍈'], ['To-ma-te','🍅'], ['A-na-nas','🍍'], ['Son-ne','☀️'], ['Sa-lat','🥗'],
+  ['In-sel','🏝️'], ['Lei-ter','🪜'], ['A-mei-se','🐜'], ['Ei-mer','🪣'], ['Ha-se','🐇'], ['Tas-se','☕'],
+  ['Na-del','🪡'], ['Tel-ler','🍽️'], ['Ham-mer','🔨'], ['Tan-ne','🌲'], ['La-ter-ne','🏮'], ['Fe-der','🪶'],
+  ['Do-se','🥫'], ['En-te','🦆'], ['Sei-fe','🧼'], ['Wol-le','🧶'], ['Sche-re','✂️'], ['Ei','🥚'], ['Eis','🍦'],
+  ['Mond','🌙'], ['Hand','✋'], ['Fisch','🐟'], ['Schaf','🐑'], ['Schal','🧣'], ['Wal','🐳'], ['Wolf','🐺'],
+  ['Stern','⭐'], ['Fee','🧚'], ['Nas-horn','🦏'], ['Hirsch','🦌'], ['Frosch','🐸'], ['Schlit-ten','🛷'], ['Fa-den','🧵'],
+  ['E-le-fant','🐘'],
+  // Für später, wenn weitere Buchstaben dazukommen (und als ähnliche Ablenker-Bilder):
+  ['Au-to','🚗'], ['Maus','🐭'], ['Haus','🏠'], ['Hut','👒'], ['Pa-pa','👨'], ['O-pa','👴'], ['Lam-pe','💡'],
+  ['Ti-ger','🐯'], ['I-gel','🦔'], ['Ba-na-ne','🍌'], ['Kat-ze','🐱'], ['Blu-me','🌸'], ['Hund','🐶'], ['Ball','⚽'],
+  ['Ku-chen','🍰'], ['Kä-se','🧀'], ['Ze-bra','🦓'], ['Gur-ke','🥒'], ['Bir-ne','🍐'], ['Ap-fel','🍎'], ['Lö-we','🦁'],
+  ['Ra-ke-te','🚀'], ['Kro-ko-dil','🐊'], ['Ka-mel','🐪'], ['Sup-pe','🍲'], ['Pil-ze','🍄'], ['Gi-raf-fe','🦒'],
+  ['Zi-tro-ne','🍋'], ['Pin-gu-in','🐧'], ['Bus','🚌'], ['Buch','📖'], ['Baum','🌳'], ['Kuh','🐄'],
+  ['Zug','🚆'], ['Uhr','⌚'], ['Mü-cke','🦟'], ['Tul-pe','🌷'], ['Wol-ke','☁️'], ['Ker-ze','🕯️'], ['Dra-che','🐉'],
+  ['Ta-sche','👜'], ['Lu-pe','🔍'], ['Kat-ze','🐱'], ['Bir-ne','🍐'],
+].map(mkWord).filter((w, i, a) => a.findIndex(x => x.w === w.w) === i);
+// Laute/Buchstaben, so wie Kinder sie lernen (sch, ei, au … zählen als eigener Buchstabe).
+const LETTERS = ['A','E','I','O','U','M','L','S','N','R','T','H','F','D','W','EI','AU','SCH','CH','P','K','B','G','Z','Ä','Ö','Ü','EU','IE','V','J'];
+const DEFAULT_KNOWN = ['A','E','I','O','M','L','S','N','R','T','H','F','D','W','EI','SCH'];
+function lettersOf(word) {
+  const w = word.toLowerCase().replace(/ck/g, 'k'), out = new Set();
+  for (let i = 0; i < w.length;) {
+    const t = ['sch', 'ch', 'ei', 'au', 'eu', 'ie'].find(t => w.startsWith(t, i)) || w[i];
+    out.add(t.toUpperCase()); i += t.length;
+  }
+  return out;
+}
+let known = new Set(store().get('letters-known', DEFAULT_KNOWN));
+const readable = w => [...lettersOf(w.w)].every(l => known.has(l));
+
+// Ähnlichkeit zweier Wörter: Buchstaben-Abstand, gleiche Endung zählt extra (Rose/Hose/Dose, Wal/Schal).
+function dist(a, b) {
+  a = a.toLowerCase(); b = b.toLowerCase();
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  const end = a.slice(-2) === b.slice(-2) ? 1 : 0;
+  return d[a.length][b.length] - end - (a[0] === b[0] ? 0.5 : 0);
+}
+// Blätter mit je 5 Wörtern. Ähnliche Wörter kommen auf dasselbe Blatt: wer nur rät oder nur den
+// ersten Buchstaben anschaut, verwechselt sie. Kurze Wörter zuerst.
+function vSheets() {
+  const rest = V_WORDS.filter(readable).sort((a, b) => a.w.length - b.w.length || a.s.length - b.s.length);
+  const out = [];
+  while (rest.length) {
+    const seed = rest.shift();
+    const near = [...rest].sort((a, b) => dist(seed.w, a.w) - dist(seed.w, b.w) || a.w.length - b.w.length).slice(0, 4);
+    near.forEach(w => rest.splice(rest.indexOf(w), 1));
+    out.push([seed, ...near]);
+  }
+  if (out.length > 1 && out[out.length - 1].length < 3) out[out.length - 2].push(...out.pop());
+  return out;
+}
+// Ablenker-Bilder: möglichst ähnlich klingende Wörter (auch mit noch unbekannten Buchstaben – es sind ja nur Bilder).
+function distractors(targets, n) {
+  const used = new Set(targets.map(t => t.e));
+  const cands = V_WORDS.filter(w => !used.has(w.e) && !targets.includes(w))
+    .map(w => ({ w, d: Math.min(...targets.map(t => dist(t.w, w.w))) + Math.random() * 1.5 }))
+    .sort((a, b) => a.d - b.d).map(x => x.w);
+  return cands.slice(0, n);
+}
 
 // ================= Hilfen =================
-const store = {
-  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
-};
+function store() {
+  return {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  };
+}
 const $ = id => document.getElementById(id);
 const view = $('view');
 const shuffle = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 const VOWEL_RE = /(äu|au|ei|eu|ie|[aeiouäöü])/gi;
 const syl = (s, c, arcs) => `<span class="${arcs ? 'arcs ' : ''}"><span class="syl c${c % 2}">${s.replace(VOWEL_RE, '<span class="v">$1</span>')}</span></span>`;
-let done = store.get('blatt-done', {});
-function markDone(key) { done[key] = true; store.set('blatt-done', done); }
+const wordSyl = w => w.s.map((s, k) => syl(s, k, true)).join('');
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+let done = store().get('blatt-done', {});
+function markDone(key) { done[key] = true; store().set('blatt-done', done); }
+let timers = [];   // beim Seitenwechsel abbrechen
+const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
 
 function confetti() {
   const box = document.createElement('div');
@@ -163,28 +283,83 @@ function confetti() {
   document.body.append(box);
   setTimeout(() => box.remove(), 3000);
 }
-function doneBox(text, nextHash) {
-  return `<div class="done-msg">${text}<div class="row">
-    ${nextHash ? `<button class="primary" onclick="location.hash='${nextHash}'">Nächstes Blatt ▶</button>` : ''}
-    <button onclick="location.hash=''">Zur Übersicht</button></div></div>`;
+// Ende eines Blatts: fehlerfrei → Haken + Konfetti; mit Fehlern → kein Haken, Blatt neu gemischt nochmal.
+function finish(el, errors, key, nextHash, again) {
+  if (!errors) {
+    markDone(key); confetti();
+    el.innerHTML = `<div class="done-msg ok">🌟 Super! Alles richtig – ohne Fehler!<div class="row">
+      ${nextHash ? `<button class="primary" onclick="location.hash='${nextHash}'">Nächstes Blatt ▶</button>` : ''}
+      <button onclick="location.hash=''">Zur Übersicht</button></div></div>`;
+  } else {
+    el.innerHTML = `<div class="done-msg warn">Geschafft – aber mit ${errors} Fehler${errors > 1 ? 'n' : ''}.
+      <div class="small">Den grünen Haken gibt es nur ohne Fehler. Lies jedes Wort genau, Silbe für Silbe.</div>
+      <div class="row"><button class="primary" id="again">🔀 Nochmal – neu gemischt</button>
+      <button onclick="location.hash=''">Zur Übersicht</button></div></div>`;
+    $('again').onclick = again;
+  }
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+// Raten bremsen: Element für ms sperren und die Silben darin nacheinander markieren.
+function lockAndSpell(el, ms = 5000, onEnd) {
+  el.classList.add('locked');
+  const syls = [...el.querySelectorAll('.syl')];
+  let k = 0;
+  const step = syls.length ? ms / (syls.length * 2 + 1) : ms;
+  const iv = setInterval(() => {
+    syls.forEach(s => s.classList.remove('hl'));
+    if (syls.length) syls[k % syls.length].classList.add('hl');
+    k++;
+  }, step);
+  timers.push(iv);
+  later(() => { clearInterval(iv); syls.forEach(s => s.classList.remove('hl')); el.classList.remove('locked'); onEnd && onEnd(); }, ms);
+}
+// Vorlesen (nur im Hörauftrag beim Silbenteppich)
+function say(text) {
+  if (!('speechSynthesis' in window)) return false;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'de-DE'; u.rate = 0.7;
+  const v = speechSynthesis.getVoices().find(v => /^de/i.test(v.lang));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+  return true;
 }
 
 // ================= Übersicht =================
 function home() {
   $('title').textContent = '📄 Silben-Blätter';
   $('back').hidden = true;
-  const tile = (key, hash, big, sub) =>
-    `<button class="sheet${done[key] ? ' done' : ''}" onclick="location.hash='${hash}'"><span class="big">${done[key] ? '✅ ' : ''}${big}</span><span class="sub">${sub}</span></button>`;
+  const tile = (key, hash, big, sub, extra = '') =>
+    `<button class="sheet${done[key] ? ' done' : ''}" onclick="location.hash='${hash}'"><span class="big">${done[key] ? '✅ ' : ''}${big}</span><span class="sub">${sub}${extra}</span></button>`;
+  const vs = vSheets();
+  const vkey = ws => ws.map(w => w.w).join(',');
+  const none = '<p class="muted">Zu wenige Wörter – bitte mehr Buchstaben einschalten.</p>';
   view.innerHTML = `
-    <h2>🟦 Silbenteppich <span class="muted">– Silben lesen und antippen</span></h2>
-    <div class="sheets">${TEPPICHE.map((t, i) => tile('t' + i, 't' + (i + 1), 'Blatt ' + (i + 1), t.name)).join('')}</div>
+    <div class="panel"><b>Buchstaben, die mein Kind schon kennt</b> <span class="muted">(antippen zum An- und Ausschalten – gilt für 🔗 und 🖼️)</span>
+      <div class="letters">${LETTERS.map(l => `<button class="letter${known.has(l) ? ' on' : ''}" data-l="${l}">${l[0] + l.slice(1).toLowerCase()}</button>`).join('')}</div>
+      <span class="muted">${V_WORDS.filter(readable).length} passende Wörter</span></div>
+    <h2>🖼️ Welches Bild passt? <span class="muted">– ein Wort, vier Bilder</span></h2>
+    <div class="sheets">${vs.length ? vs.map((ws, i) => tile('b:' + vkey(ws), 'b' + (i + 1), 'Blatt ' + (i + 1), ws.map(w => w.e).join(''))).join('') : none}</div>
+    <h2>🔗 Wörter und Bilder verbinden <span class="muted">– 5 Wörter, 8 Bilder</span></h2>
+    <div class="sheets">${vs.length ? vs.map((ws, i) => tile('v:' + vkey(ws), 'v' + (i + 1), 'Blatt ' + (i + 1), ws.map(w => w.e).join(''))).join('') : none}</div>
+    <h2>🟦 Silbenteppich <span class="muted">– mit Erwachsenem oder als Hörauftrag</span></h2>
+    <div class="sheets">${TEPPICHE.map((t, i) => tile('t' + i, 't' + (i + 1), 'Blatt ' + (i + 1), t.name, done['th' + i] ? ' · 👂✓' : '')).join('')}</div>
     <h2>🧩 Silbenpuzzle <span class="muted">– Wörter aus Silben legen</span></h2>
     <div class="sheets">${PUZZLES.map((p, i) => tile('p' + i, 'p' + (i + 1), 'Blatt ' + (i + 1), p.stufe + ' · ' + p.words.map(w => w.e).join(''))).join('')}</div>
-    <p class="muted" style="margin-top:24px">Fertige Blätter bekommen einen grünen Haken. Alles bleibt auf diesem Gerät gespeichert.
+    <p class="muted" style="margin-top:24px">✅ gibt es nur für Blätter ohne Fehler. Mit Fehlern kommt das Blatt neu gemischt noch einmal.
+      Alles bleibt auf diesem Gerät gespeichert.
       <button style="min-height:40px;padding:6px 12px;font-size:.95rem" onclick="if(confirm('Alle Haken löschen?')){localStorage.removeItem('blatt-done');location.reload()}">Haken zurücksetzen</button></p>`;
+  view.querySelectorAll('.letter').forEach(b => b.onclick = () => {
+    const l = b.dataset.l;
+    known.has(l) ? known.delete(l) : known.add(l);
+    store().set('letters-known', [...known]);
+    const y = scrollY; home(); scrollTo(0, y);
+  });
 }
 
 // ================= Silbenteppich =================
+// Modus „Erwachsener“: Das Kind liest vor, nur ein Erwachsener markiert (langer Druck) das Feld als richtig.
+// Modus „Hörauftrag“: Das Tablet spricht eine Silbe, das Kind sucht sie. Nach 2 Fehlern wird neu gemischt.
 function teppich(n) {
   const t = TEPPICHE[n];
   let grid = t.rows;
@@ -194,116 +369,373 @@ function teppich(n) {
   }
   const cols = grid[0].length;
   let cells = grid.flatMap((r, ri) => r.map((s, ci) => ({ s, c: ri + ci, read: false })));
+  let mode = store().get('teppich-mode', 'adult');
+  const canSpeak = 'speechSynthesis' in window;
+  if (!canSpeak) mode = 'adult';
+  // Hörauftrag-Zustand
+  let order = [], target = null, errors = 0, errSinceMix = 0, totalErr = 0, started = false;
   $('title').textContent = `🟦 Silbenteppich – Blatt ${n + 1}`;
   $('back').hidden = false;
-  function render() {
+
+  function recolor() { cells = cells.map((c, i) => ({ ...c, c: Math.floor(i / cols) + (i % cols) })); }
+  function render(msg = '', cls = '') {
     const count = cells.filter(c => c.read).length;
+    const task = mode === 'adult'
+      ? 'Lies jede Silbe laut einem Erwachsenen vor. <b>Der Erwachsene</b> drückt lange auf das Feld, wenn es richtig war – dann wird es grün.'
+      : 'Hör genau hin: Das Tablet sagt eine Silbe. Tippe die richtige Silbe an. <b>🔊</b> spielt sie nochmal.';
     view.innerHTML = `
-      <p class="task">Lies jede Silbe laut vor. Dann tippe sie an – sie wird grün. Lies erst quer ➡, dann von oben nach unten ⬇.</p>
       <div class="bar">
-        <button id="mix">🔀 Durcheinander</button>
-        <button id="reset">↺ Von vorn</button>
+        <button id="m-adult" class="${mode === 'adult' ? 'on' : ''}">👩 Mit Erwachsenem</button>
+        <button id="m-hear" class="${mode === 'hear' ? 'on' : ''}"${canSpeak ? '' : ' disabled'}>👂 Hörauftrag</button>
         <span class="count">${count} von ${cells.length} ✓</span>
       </div>
-      <div class="teppich" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">
-        ${cells.map((c, i) => `<button class="feld${c.read ? ' read' : ''}" data-i="${i}">${syl(c.s, c.c)}</button>`).join('')}
+      <p class="task">${task}</p>
+      <div class="bar">
+        ${mode === 'adult'
+          ? '<button id="mix">🔀 Durcheinander</button><button id="reset">↺ Von vorn</button>'
+          : `<button id="play" class="primary">${started ? '🔊 Nochmal hören' : '▶ Start'}</button><span class="muted">Fehler: ${totalErr}</span>`}
+      </div>
+      <div class="msg ${cls}" id="tmsg">${msg}</div>
+      <div class="teppich" id="tep" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">
+        ${cells.map((c, i) => `<button class="feld${c.read ? ' read' : ''}" data-i="${i}"><span class="ring"></span>${syl(c.s, c.c)}</button>`).join('')}
       </div>
       <div id="fin"></div>`;
-    view.querySelectorAll('.feld').forEach(b => b.onclick = () => {
-      const c = cells[+b.dataset.i];
-      c.read = !c.read;   // nochmal tippen nimmt es zurück
-      const wasDone = cells.every(x => x.read);
-      render();
-      if (wasDone) {
-        markDone('t' + n); confetti();
-        $('fin').innerHTML = doneBox('🎉 Super! Du hast alle Silben gelesen!', n + 1 < TEPPICHE.length ? 't' + (n + 2) : 'p1');
-      }
+    $('m-adult').onclick = () => { mode = 'adult'; store().set('teppich-mode', mode); reset(); };
+    $('m-hear').onclick = () => { mode = 'hear'; store().set('teppich-mode', mode); reset(); };
+    if (mode === 'adult') bindAdult(); else bindHear();
+  }
+  function reset() { cells.forEach(c => c.read = false); order = []; target = null; started = false; totalErr = 0; errSinceMix = 0; render(); }
+
+  function bindAdult() {
+    $('mix').onclick = () => { cells = shuffle(cells); recolor(); render(); };
+    $('reset').onclick = reset;
+    view.querySelectorAll('.feld').forEach(b => {
+      let t0 = null;
+      const cancel = () => { clearTimeout(t0); t0 = null; b.classList.remove('pressing'); };
+      b.addEventListener('contextmenu', e => e.preventDefault());
+      b.addEventListener('pointerdown', () => {
+        b.classList.add('pressing');
+        t0 = setTimeout(() => {
+          t0 = null;
+          const c = cells[+b.dataset.i];
+          c.read = !c.read;
+          render(c.read ? '✅ Richtig gelesen!' : '', 'ok');
+          if (cells.every(x => x.read)) finish($('fin'), 0, 't' + n, n + 1 < TEPPICHE.length ? 't' + (n + 2) : '', reset);
+        }, 700);
+      });
+      b.addEventListener('pointerup', () => {
+        if (t0) { cancel(); $('tmsg').className = 'msg warn'; $('tmsg').textContent = '📢 Lies die Silbe laut vor – ein Erwachsener drückt lange, wenn sie richtig war.'; }
+      });
+      b.addEventListener('pointerleave', cancel);
+      b.addEventListener('pointercancel', cancel);
     });
-    $('mix').onclick = () => { cells = shuffle(cells).map((c, i) => ({ ...c, c: Math.floor(i / cols) + (i % cols) })); render(); };
-    $('reset').onclick = () => { cells.forEach(c => c.read = false); render(); };
+  }
+
+  function nextTarget() {
+    if (!order.length) order = shuffle(cells.filter(c => !c.read));
+    target = order.shift();
+    say(target.s.toLowerCase());
+  }
+  function bindHear() {
+    $('play').onclick = () => {
+      if (!started) { started = true; nextTarget(); render('Welche Silbe war das?'); }
+      else say(target.s.toLowerCase());
+    };
+    view.querySelectorAll('.feld').forEach(b => b.onclick = () => {
+      if (!started || !target) return;
+      const c = cells[+b.dataset.i];
+      if (c.read) return;
+      if (c.s === target.s) {
+        c.read = true;
+        if (cells.every(x => x.read)) {
+          render('✅ Richtig!', 'ok');
+          const again = () => { reset(); };
+          if (!totalErr) markDone('th' + n);
+          finish($('fin'), totalErr, 'th' + n, n + 1 < TEPPICHE.length ? 't' + (n + 2) : '', again);
+          return;
+        }
+        render('✅ Richtig!', 'ok');
+        later(() => { nextTarget(); }, 700);
+        return;
+      }
+      // Falsch: kurz sperren, Silbe nochmal vorsprechen. Nach 2 Fehlern neu mischen.
+      totalErr++; errSinceMix++;
+      b.classList.add('wrongf', 'shake');
+      const tep = $('tep');
+      tep.classList.add('locked');
+      $('tmsg').className = 'msg bad';
+      $('tmsg').textContent = errSinceMix >= 2 ? '❌ Nicht ganz. Die Silben werden neu gemischt – hör genau hin!' : '❌ Nicht ganz. Hör nochmal genau hin …';
+      later(() => {
+        if (errSinceMix >= 2) { errSinceMix = 0; cells = shuffle(cells); recolor(); order = shuffle(cells.filter(c => !c.read && c !== target)); }
+        render('Welche Silbe war das?');
+        say(target.s.toLowerCase());
+      }, 2500);
+    });
   }
   render();
 }
 
 // ================= Silbenpuzzle =================
+// Karten sind einfarbig und kleingeschrieben (verraten die Reihenfolge nicht), dazu falsche Silben.
+// Geprüft wird erst mit „Fertig – prüfen“. Ist eine Zeile falsch, gehen alle ihre Silben zurück.
 function puzzle(n) {
   const p = PUZZLES[n];
   $('title').textContent = `🧩 Silbenpuzzle – Blatt ${n + 1}`;
   $('back').hidden = false;
-  let id = 0;
-  const cards = shuffle(p.words.flatMap(w => w.s.map((s, k) => ({ id: id++, s, k, used: false }))));
-  const rows = p.words.map(w => ({ w, slots: w.s.map(() => null), solved: false, wrong: [] }));
-  let active = 0;
-  function render() {
+  let cards, rows, active, errors;
+  function start() {
+    let id = 0;
+    const need = new Set(p.words.flatMap(w => w.s.map(s => s.toLowerCase())));
+    const extra = shuffle(ALL_SYLS.filter(s => !need.has(s))).slice(0, 3);
+    cards = shuffle([...p.words.flatMap(w => w.s.map(s => s.toLowerCase())), ...extra].map(s => ({ id: id++, s, used: false })));
+    rows = shuffle(p.words).map(w => ({ w, slots: w.s.map(() => null), solved: false, locked: false }));
+    active = 0; errors = 0;
+    render();
+  }
+  const free = () => rows.findIndex(r => !r.solved && !r.locked && r.slots.includes(null));
+  function render(msg = '', cls = '') {
     const solved = rows.filter(r => r.solved).length;
+    const allFull = rows.every(r => r.solved || r.slots.every(Boolean));
+    const anyLocked = rows.some(r => r.locked);
     view.innerHTML = `
-      <p class="task">Tippe eine Zeile an. Dann tippe die Silben in der richtigen Reihenfolge an. Lies das Wort leise mit.
-        <span class="muted">Falsche Silbe gelegt? Tippe sie an, dann geht sie zurück.</span></p>
-      <div class="bar"><span class="count">${solved} von ${rows.length} Wörtern ✓</span></div>
+      <p class="task">Schau das Bild an. Tippe eine Zeile an und lege die Silben in der richtigen Reihenfolge. Lies das Wort leise mit.
+        Achtung: Es sind auch falsche Silben dabei! Wenn alles liegt, tippe auf <b>Fertig – prüfen</b>.
+        <span class="muted">Silbe falsch gelegt? Antippen, dann geht sie zurück.</span></p>
+      <div class="bar"><span class="muted">Fehler: ${errors}</span><span class="count">${solved} von ${rows.length} Wörtern ✓</span></div>
       <div class="rows">${rows.map((r, ri) => `
-        <div class="prow${r.solved ? ' solved' : ri === active ? ' active' : ''}" data-r="${ri}">
+        <div class="prow${r.solved ? ' solved' : r.locked ? ' locked' : ri === active ? ' active' : ''}" data-r="${ri}">
           <div class="pic">${r.w.e}</div>
           ${r.solved
-            ? `<div class="solvedword">${r.w.s.map((s, k) => syl(s, k, true)).join('')}</div>`
-            : `<div class="pslots">${r.slots.map((c, k) => `<button class="pslot${c ? ` filled c${k % 2}` : ''}${r.wrong.includes(k) ? ' wrong' : ''}" data-r="${ri}" data-k="${k}">${c ? c.s : ''}</button>`).join('')}</div>`}
+            ? `<div class="solvedword">${wordSyl(r.w)}</div>`
+            : r.locked
+              ? `<span class="lockinfo">❌ Sprich das Wort langsam, Silbe für Silbe, und versuch es gleich nochmal …</span>`
+              : `<div class="pslots">${r.slots.map((c, k) => `<button class="pslot${c ? ' filled' : ''}" data-r="${ri}" data-k="${k}">${c ? (k === 0 ? cap(c.s) : c.s) : ''}</button>`).join('')}</div>`}
         </div>`).join('')}
       </div>
-      <div id="fin"></div>
-      ${solved < rows.length ? `<div class="pool">${cards.filter(c => !c.used).map(c => `<button class="karte c${c.k % 2}" data-id="${c.id}">${c.s}</button>`).join('')}</div>` : ''}`;
-
+      <div class="msg ${cls}">${msg}</div>
+      ${solved < rows.length ? `<div class="checkrow"><button class="primary" id="check"${allFull && !anyLocked ? '' : ' disabled'}>✔ Fertig – prüfen</button></div>
+        <div class="pool">${cards.filter(c => !c.used).map(c => `<button class="karte" data-id="${c.id}">${c.s}</button>`).join('')}</div>` : ''}
+      <div id="fin"></div>`;
     view.querySelectorAll('.prow').forEach(el => el.onclick = () => {
-      const ri = +el.dataset.r;
-      if (!rows[ri].solved) { active = ri; render(); }
+      const r = rows[+el.dataset.r];
+      if (!r.solved && !r.locked) { active = +el.dataset.r; render(); }
     });
     view.querySelectorAll('.pslot').forEach(el => el.onclick = e => {
       e.stopPropagation();
       const r = rows[+el.dataset.r], k = +el.dataset.k;
       active = +el.dataset.r;
       if (r.slots[k]) { r.slots[k].used = false; r.slots[k] = null; }
-      r.wrong = [];
       render();
     });
     view.querySelectorAll('.karte').forEach(el => el.onclick = () => place(cards.find(c => c.id === +el.dataset.id)));
-    if (solved === rows.length) {
-      $('fin').innerHTML = doneBox('🎉 Toll! Alle Wörter sind fertig!', n + 1 < PUZZLES.length ? 'p' + (n + 2) : '');
-    }
+    if ($('check')) $('check').onclick = check;
+    if (solved === rows.length) finish($('fin'), errors, 'p' + n, n + 1 < PUZZLES.length ? 'p' + (n + 2) : '', start);
   }
   function place(card) {
-    if (rows[active].solved) active = rows.findIndex(r => !r.solved);
-    const r = rows[active];
-    const free = r.slots.indexOf(null);
-    if (free < 0) return;
-    card.used = true; r.slots[free] = card; r.wrong = [];
-    if (r.slots.every(Boolean)) {
-      // Gleich lautende Silben (z. B. zweimal »ma«) sind austauschbar: es zählt der Text.
-      r.wrong = r.slots.map((c, k) => c.s === r.w.s[k] ? -1 : k).filter(k => k >= 0);
-      if (!r.wrong.length) {
-        r.solved = true;
-        const next = rows.findIndex(x => !x.solved);
-        if (next >= 0) active = next;
-        else { markDone('p' + n); confetti(); }
-      } else {
-        render();
-        // Falsche Silben gehen nach kurzer Zeit zurück, richtige bleiben liegen.
-        setTimeout(() => {
-          r.wrong.forEach(k => { if (r.slots[k]) { r.slots[k].used = false; r.slots[k] = null; } });
-          r.wrong = []; render();
-        }, 900);
-        return;
-      }
-    }
+    let r = rows[active];
+    if (!r || r.solved || r.locked || !r.slots.includes(null)) { active = free(); r = rows[active]; }
+    if (!r) return;
+    card.used = true; r.slots[r.slots.indexOf(null)] = card;
+    if (!r.slots.includes(null)) { const f = free(); if (f >= 0) active = f; }
     render();
   }
-  render();
+  function check() {
+    let bad = 0;
+    rows.forEach(r => {
+      if (r.solved) return;
+      if (r.slots.every((c, k) => c.s === r.w.s[k].toLowerCase())) { r.solved = true; return; }
+      bad++;
+      r.slots.forEach(c => { if (c) c.used = false; });   // alle Silben der Zeile zurück
+      r.slots = r.w.s.map(() => null);
+      r.locked = true;
+    });
+    errors += bad;
+    active = Math.max(0, free());
+    render(bad ? `❌ ${bad} Wort${bad > 1 ? 'e sind' : ' ist'} noch nicht richtig.` : '', 'bad');
+    if (bad) later(() => { rows.forEach(r => r.locked = false); active = Math.max(0, free()); render('Jetzt nochmal – lies genau!', 'warn'); }, 5000);
+  }
+  start();
+}
+
+// ================= Verbinden: 5 Wörter, 8 Bilder =================
+// Linien ziehen (oder Wort und Bild nacheinander antippen). Keine Rückmeldung pro Linie –
+// geprüft wird erst mit „Fertig – prüfen“. Falsche Wörter werden 5 s gesperrt und Silbe für Silbe markiert.
+function verbinden(n) {
+  const words = vSheets()[n];
+  if (!words) { location.hash = ''; return; }
+  const key = 'v:' + words.map(w => w.w).join(',');
+  $('title').textContent = `🔗 Verbinden – Blatt ${n + 1}`;
+  $('back').hidden = false;
+  let left, right, links, good, errors, sel, start, startXY, dragging, checking;
+  function init() {
+    left = shuffle(words);
+    right = shuffle([...words, ...distractors(words, 3)]);
+    links = new Map();   // Wort → Bild (beides Wort-Objekte)
+    good = new Set(); errors = 0; sel = null; start = null; checking = false;
+    build();
+  }
+  function build() {
+    view.innerHTML = `
+      <p class="task">Lies jedes Wort genau. Zieh eine Linie zum passenden Bild – oder tippe erst das Wort, dann das Bild.
+        Es gibt mehr Bilder als Wörter! Wenn alle Wörter verbunden sind, tippe auf <b>Fertig – prüfen</b>.</p>
+      <div class="bar"><span class="muted" id="verr"></span><span class="count" id="vcount"></span></div>
+      <div class="vb" id="vb">
+        <div class="vcol l">${left.map((w, i) => `<button class="vitem vword" data-side="w" data-i="${i}">${wordSyl(w)}<span class="vdot"></span></button>`).join('')}</div>
+        <div class="vcol r">${right.map((w, i) => `<button class="vitem vpic" data-side="p" data-i="${i}">${w.e}<span class="vdot"></span></button>`).join('')}</div>
+        <svg class="vlines" id="vlines"></svg>
+      </div>
+      <div class="msg" id="vmsg"></div>
+      <div class="checkrow"><button class="primary" id="check" disabled>✔ Fertig – prüfen</button></div>
+      <div id="fin"></div>`;
+    bind(); draw();
+  }
+  const vb = () => $('vb');
+  const itemOf = el => el && el.closest && el.closest('.vitem');
+  const objOf = el => (el.dataset.side === 'w' ? left : right)[+el.dataset.i];
+  const elOf = (side, w) => [...view.querySelectorAll(`.vitem[data-side="${side}"]`)].find(e => objOf(e) === w);
+  const dotPos = el => {
+    const d = el.querySelector('.vdot').getBoundingClientRect(), b = vb().getBoundingClientRect();
+    return [d.left + d.width / 2 - b.left, d.top + d.height / 2 - b.top];
+  };
+  const line = (a, b, cls) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="${cls}"/>`;
+  function draw(tmp = '', marks = null) {
+    let out = '';
+    links.forEach((pic, w) => {
+      const cls = good.has(w) ? 'l-ok' : marks && marks.has(w) ? 'l-bad' : 'l-on';
+      out += line(dotPos(elOf('w', w)), dotPos(elOf('p', pic)), cls);
+    });
+    $('vlines').innerHTML = out + tmp;
+    view.querySelectorAll('.vitem').forEach(e => {
+      const o = objOf(e);
+      const isGood = e.dataset.side === 'w' ? good.has(o) : [...good].some(w => links.get(w) === o);
+      e.classList.toggle('good', isGood);
+      e.classList.toggle('sel', e === sel);
+    });
+    $('vcount').textContent = `${good.size} von ${words.length} ✓`;
+    $('verr').textContent = `Fehler: ${errors}`;
+    $('check').disabled = checking || links.size < words.length;
+  }
+  function connect(a, b) {
+    sel = null;
+    if (!a || !b || a.dataset.side === b.dataset.side) return draw();
+    const [we, pe] = a.dataset.side === 'w' ? [a, b] : [b, a];
+    const w = objOf(we), pic = objOf(pe);
+    if (good.has(w) || [...good].some(g => links.get(g) === pic)) return draw();
+    // Jedes Bild höchstens einmal: alte Linie zu diesem Bild löschen
+    links.forEach((p2, w2) => { if (p2 === pic) links.delete(w2); });
+    links.set(w, pic);
+    draw();
+  }
+  function check() {
+    checking = true;
+    const bad = new Set([...links].filter(([w, p]) => w !== p).map(([w]) => w));
+    links.forEach((p, w) => { if (w === p) good.add(w); });
+    errors += bad.size;
+    draw('', bad);
+    bad.forEach(w => elOf('w', w).classList.add('bad'));
+    if (!bad.size) {
+      $('vmsg').textContent = '';
+      finish($('fin'), errors, key, n + 1 < vSheets().length ? 'v' + (n + 2) : '', init);
+      return;
+    }
+    $('vmsg').className = 'msg bad';
+    $('vmsg').textContent = `❌ ${bad.size} Linie${bad.size > 1 ? 'n sind' : ' ist'} falsch. Lies die roten Wörter laut – Silbe für Silbe.`;
+    bad.forEach(w => lockAndSpell(elOf('w', w), 5000));
+    later(() => {
+      bad.forEach(w => { links.delete(w); elOf('w', w).classList.remove('bad'); });
+      checking = false; $('vmsg').className = 'msg warn'; $('vmsg').textContent = 'Jetzt nochmal verbinden!';
+      draw();
+    }, 5000);
+  }
+  function bind() {
+    const box = vb();
+    box.addEventListener('pointerdown', e => {
+      const it = itemOf(e.target);
+      if (!it || checking || it.classList.contains('good')) return;
+      start = it; startXY = [e.clientX, e.clientY]; dragging = false;
+      try { box.setPointerCapture(e.pointerId); } catch {}
+    });
+    box.addEventListener('pointermove', e => {
+      if (!start) return;
+      if (!dragging && Math.hypot(e.clientX - startXY[0], e.clientY - startXY[1]) > 12) dragging = true;
+      if (dragging) {
+        const b = box.getBoundingClientRect();
+        draw(line(dotPos(start), [e.clientX - b.left, e.clientY - b.top], 'l-tmp'));
+      }
+    });
+    box.addEventListener('pointerup', e => {
+      if (!start) return;
+      const s0 = start; start = null;
+      if (dragging) return connect(s0, itemOf(document.elementFromPoint(e.clientX, e.clientY)));
+      if (sel && sel.dataset.side !== s0.dataset.side) return connect(sel, s0);
+      sel = sel === s0 ? null : s0; draw();
+    });
+    box.addEventListener('pointercancel', () => { start = null; draw(); });
+    $('check').onclick = check;
+  }
+  onresize = () => $('vb') && draw();
+  init();
+}
+
+// ================= Welches Bild passt? Ein Wort, vier Bilder =================
+// Falsch getippt → Wort 5 s gesperrt (Silben werden nacheinander markiert) und es kommt später nochmal.
+function bild(n) {
+  const words = vSheets()[n];
+  if (!words) { location.hash = ''; return; }
+  const key = 'b:' + words.map(w => w.w).join(',');
+  $('title').textContent = `🖼️ Welches Bild passt? – Blatt ${n + 1}`;
+  $('back').hidden = false;
+  let queue, errors, cur, missed;
+  function init() { queue = shuffle(words); errors = 0; missed = new Set(); next(); }
+  function next() {
+    if (!queue.length) {
+      view.innerHTML = '<div id="fin"></div>';
+      return finish($('fin'), errors, key, n + 1 < vSheets().length ? 'b' + (n + 2) : '', init);
+    }
+    cur = queue.shift();
+    const opts = shuffle([cur, ...shuffle(distractors([cur], 5)).slice(0, 3)]);
+    const doneCount = words.length - queue.length - 1;
+    view.innerHTML = `
+      <p class="task">Lies das Wort laut, Silbe für Silbe. Tippe dann das passende Bild an.</p>
+      <div class="bar"><span class="muted">Fehler: ${errors}</span><span class="count">${doneCount} von ${words.length} ✓</span></div>
+      <div class="bigword" id="bw">${wordSyl(cur)}</div>
+      <div class="choices" id="ch">${opts.map((o, i) => `<button class="choice" data-i="${i}">${o.e}</button>`).join('')}</div>
+      <div class="msg" id="bmsg"></div>`;
+    view.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+      const o = opts[+b.dataset.i];
+      if (o === cur) {
+        b.classList.add('good');
+        $('ch').classList.add('locked');
+        $('bmsg').className = 'msg ok'; $('bmsg').textContent = '✅ Richtig!';
+        later(next, 900);
+        return;
+      }
+      errors++;
+      b.classList.add('bad', 'shake');
+      if (!missed.has(cur)) { missed.add(cur); queue.push(cur); }   // kommt später nochmal
+      $('bmsg').className = 'msg bad'; $('bmsg').textContent = '❌ Das passt nicht. Lies das Wort nochmal laut – Silbe für Silbe.';
+      $('ch').classList.add('locked');
+      lockAndSpell($('bw'), 5000, () => {
+        $('ch').classList.remove('locked');
+        b.classList.remove('shake');
+        $('bmsg').className = 'msg warn'; $('bmsg').textContent = 'Jetzt nochmal!';
+      });
+    });
+  }
+  init();
 }
 
 // ================= Navigation =================
 function route() {
-  const m = location.hash.match(/^#([tp])(\d+)$/);
+  timers.forEach(t => { clearTimeout(t); clearInterval(t); }); timers = [];
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  const m = location.hash.match(/^#([tpvb])(\d+)$/);
   window.scrollTo(0, 0);
   document.querySelectorAll('.confetti').forEach(c => c.remove());
   if (m && m[1] === 't' && TEPPICHE[m[2] - 1]) return teppich(m[2] - 1);
   if (m && m[1] === 'p' && PUZZLES[m[2] - 1]) return puzzle(m[2] - 1);
+  if (m && m[1] === 'v') return verbinden(m[2] - 1);
+  if (m && m[1] === 'b') return bild(m[2] - 1);
   home();
 }
 $('back').onclick = () => { location.hash = ''; };
