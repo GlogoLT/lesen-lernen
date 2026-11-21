@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3b82f6">
+<title>Silben-Blätter</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #fdf8f0; --card: #ffffff; --ink: #2b2b2b; --muted: #6b6b6b; --line: #e5e0d6;
+    --accent: #3b82f6; --ok: #16a34a; --okbg: #dcfce7; --bad: #dc2626; --warn: #d97706;
+    --syl0: #1d4ed8; --syl1: #dc2626; --vowel: #fde68a; --slot: #f3efe6; --act: #e0f2fe;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b1d22; --card: #262a31; --ink: #f1f1f1; --muted: #a3a3a3; --line: #3a3f48; --okbg: #14361f;
+      --syl0: #60a5fa; --syl1: #f87171; --vowel: #713f12; --slot: #1f2329; --act: #0c4a6e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b1d22; --card: #262a31; --ink: #f1f1f1; --muted: #a3a3a3; --line: #3a3f48; --okbg: #14361f;
+    --syl0: #60a5fa; --syl1: #f87171; --vowel: #713f12; --slot: #1f2329; --act: #0c4a6e;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { touch-action: manipulation; }
+  body { margin: 0; font-family: 'Andika', ui-rounded, system-ui, sans-serif; background: var(--bg); color: var(--ink);
+         user-select: none; -webkit-user-select: none; }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; max-width: 1100px; margin: 0 auto; flex-wrap: wrap; }
+  h1 { font-size: 1.5rem; margin: 0; flex: 1; }
+  h2 { font-size: 1.3rem; margin: 22px 0 10px; }
+  main { padding: 0 16px 40px; max-width: 1100px; margin: 0 auto; }
+  button { font: inherit; font-size: 1.15rem; border-radius: 16px; padding: 12px 18px; background: var(--card); color: var(--ink);
+           border: 2px solid var(--line); cursor: pointer; min-height: 56px; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .task { font-size: 1.25rem; margin: 0 0 14px; padding: 12px 16px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; }
+  .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .bar .count { font-size: 1.2rem; font-weight: 700; margin-left: auto; }
+  .muted { color: var(--muted); }
+
+  /* Übersicht */
+  .sheets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .sheet { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px; min-height: 110px; }
+  .sheet .big { font-size: 1.7rem; font-weight: 700; }
+  .sheet .sub { font-size: .95rem; color: var(--muted); }
+  .sheet.done { background: var(--okbg); border-color: var(--ok); }
+
+  /* Silben */
+  .syl { position: relative; padding: 0 .06em; }
+  .c0 { color: var(--syl0); } .c1 { color: var(--syl1); }
+  .v { box-shadow: inset 0 -0.36em var(--vowel); border-radius: 3px; }
+  .arcs .syl::after { content: ''; position: absolute; left: 10%; right: 10%; bottom: -0.3em; height: .34em;
+    border: .07em solid currentColor; border-top: 0; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+
+  /* Silbenteppich */
+  .teppich { display: grid; gap: 10px; }
+  .feld { font-size: clamp(1.9rem, 6vw, 3rem); font-weight: 700; min-height: clamp(64px, 11vw, 96px); padding: 4px; position: relative; }
+  .feld.read { background: var(--okbg); border-color: var(--ok); }
+  .feld.read::after { content: '✓'; position: absolute; top: 2px; right: 8px; font-size: 1.1rem; color: var(--ok); }
+
+  /* Silbenpuzzle */
+  .rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .prow { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--card); border: 3px solid var(--line);
+          border-radius: 18px; min-height: 92px; cursor: pointer; }
+  .prow.active { border-color: var(--accent); background: var(--act); }
+  .prow.solved { border-color: var(--ok); background: var(--okbg); cursor: default; }
+  .prow .pic { font-size: 3rem; line-height: 1; width: 64px; text-align: center; flex-shrink: 0; }
+  .pslots { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pslot { min-width: 84px; height: 66px; border: 3px dashed var(--line); border-radius: 14px; background: var(--slot);
+           display: flex; align-items: center; justify-content: center; font-size: clamp(1.7rem, 4.5vw, 2.3rem); font-weight: 700; padding: 0 8px; }
+  .pslot.filled { border-style: solid; background: var(--card); }
+  .pslot.filled.c0 { border-color: var(--syl0); } .pslot.filled.c1 { border-color: var(--syl1); }
+  .pslot.wrong { animation: shake .4s; border-color: var(--bad) !important; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .solvedword { font-size: clamp(1.9rem, 5vw, 2.5rem); font-weight: 700; padding-bottom: 12px; }
+  .pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 14px; border: 3px dashed var(--line); border-radius: 18px; }
+  .karte { font-size: clamp(1.8rem, 5vw, 2.5rem); font-weight: 700; min-width: 96px; min-height: 76px; }
+
+  .done-msg { text-align: center; font-size: 1.6rem; font-weight: 700; color: var(--ok); margin: 18px 0; }
+  .done-msg .row { display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+  .done-msg button { font-size: 1.2rem; }
+</style>
+</head>
+<body>
+<header>
+  <button id="back" hidden>◀ Übersicht</button>
+  <h1 id="title">📄 Silben-Blätter</h1>
+  <a href="./" id="applink"><button>📖 Zur Lese-App</button></a>
+</header>
+<main id="view"></main>
+
+<script>
+// Interaktive Arbeitsblätter fürs Tablet, ohne Spracherkennung und ohne Ton.
+// Silbenteppich: Silbe laut lesen, dann antippen → das Feld wird grün.
+// Silbenpuzzle: Silbenkarten antippen → sie wandern auf den nächsten freien Platz der markierten Zeile.
+
+// ================= Daten =================
+const V = ['a', 'e', 'i', 'o', 'u'];
+const cv = (cons, vows = V) => cons.map(c => vows.map(v => c + v));
+const vc = (cons, vows = V) => cons.map(c => vows.map(v => v + c.toLowerCase()));
+const TEPPICHE = [
+  { name: 'M L S N',      rows: cv(['M', 'L', 'S', 'N']) },
+  { name: 'R T H F',      rows: cv(['R', 'T', 'H', 'F']) },
+  { name: 'W D B K',      rows: cv(['W', 'D', 'B', 'K']) },
+  { name: 'P G Z Sch',    rows: cv(['P', 'G', 'Z', 'Sch']) },
+  { name: 'au ei eu',     rows: cv(['M', 'L', 'S', 'N', 'R', 'H'], ['au', 'ei', 'eu']) },
+  { name: 'am im um …',   rows: vc(['M', 'L', 'N', 'S']).map(r => r.map(s => s[0].toUpperCase() + s.slice(1))) },
+  { name: 'Mix 1',        mix: [0, 1] },
+  { name: 'Mix 2',        mix: [0, 1, 2, 3] },
+];
+// Gleiche Wörter wie in der Lese-App (index.html).
+const STUFEN = [
+  ['leicht', [['Ma-ma','👩'], ['Pa-pa','👨'], ['O-ma','👵'], ['Ro-se','🌹'], ['Na-se','👃'], ['Ho-se','👖'],
+    ['So-fa','🛋️'], ['Lö-we','🦁'], ['Au-to','🚗'], ['I-gel','🦔'], ['Ti-ger','🐯'], ['Blu-me','🌸'],
+    ['Ta-sche','👜'], ['Ku-chen','🍰'], ['Ho-nig','🍯'], ['Lu-pe','🔍'], ['Ze-bra','🦓'], ['Zie-ge','🐐'],
+    ['Mu-schel','🐚'], ['Du-sche','🚿'], ['Kä-se','🧀'], ['Bre-zel','🥨'], ['Pu-del','🐩'],
+    ['Dra-che','🐉'], ['Gei-ge','🎻']]],
+  ['mittel', [['Kat-ze','🐱'], ['Lam-pe','💡'], ['Son-ne','☀️'], ['Ap-fel','🍎'], ['En-te','🦆'], ['Wol-ke','☁️'],
+    ['Bir-ne','🍐'], ['Ker-ze','🕯️'], ['Fens-ter','🪟'], ['Gur-ke','🥒'], ['Pil-ze','🍄'], ['Ka-mel','🐪'],
+    ['Löf-fel','🥄'], ['Rol-ler','🛴'], ['Sup-pe','🍲'], ['Kir-sche','🍒'], ['Pin-sel','🖌️'], ['Ham-mer','🔨'],
+    ['Kof-fer','🧳'], ['Pan-da','🐼'], ['Kür-bis','🎃'], ['Tul-pe','🌷'], ['Schne-cke','🐌'], ['Ein-horn','🦄']]],
+  ['schwer', [['Ba-na-ne','🍌'], ['To-ma-te','🍅'], ['Gi-raf-fe','🦒'], ['E-le-fant','🐘'], ['Kar-tof-fel','🥔'],
+    ['A-na-nas','🍍'], ['Kro-ko-dil','🐊'], ['Me-lo-ne','🍈'], ['Zi-tro-ne','🍋'], ['Ra-ke-te','🚀'],
+    ['Ro-bo-ter','🤖'], ['Pa-pa-gei','🦜'], ['Schmet-ter-ling','🦋'], ['Schild-krö-te','🐢'], ['Pin-gu-in','🐧'],
+    ['Re-gen-bo-gen','🌈'], ['Hub-schrau-ber','🚁'], ['Scho-ko-la-de','🍫'], ['Ka-rot-te','🥕']]],
+];
+// Puzzle-Blätter: je 6 Wörter, ein Rest von 1 Wort kommt zum letzten Blatt dazu.
+const PUZZLES = STUFEN.flatMap(([stufe, ws]) => {
+  const words = ws.map(([h, e]) => ({ s: h.split('-'), e, w: h.replace(/-/g, '') }));
+  const out = [];
+  for (let i = 0; i < words.length; i += 6) out.push(words.slice(i, i + 6));
+  if (out.length > 1 && out[out.length - 1].length < 3) out[out.length - 2].push(...out.pop());
+  return out.map(words => ({ stufe, words }));
+});
+
+// ================= Hilfen =================
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const $ = id => document.getElementById(id);
+const view = $('view');
+const shuffle = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
+const VOWEL_RE = /(äu|au|ei|eu|ie|[aeiouäöü])/gi;
+const syl = (s, c, arcs) => `<span class="${arcs ? 'arcs ' : ''}"><span class="syl c${c % 2}">${s.replace(VOWEL_RE, '<span class="v">$1</span>')}</span></span>`;
+let done = store.get('blatt-done', {});
+function markDone(key) { done[key] = true; store.set('blatt-done', done); }
+
+function confetti() {
+  const box = document.createElement('div');
+  box.className = 'confetti';
+  box.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9';
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement('div');
+    s.textContent = ['⭐', '🌟', '✨', '🎉'][i % 4];
+    s.style.cssText = `position:absolute;left:${Math.random() * 100}%;top:-40px;font-size:${24 + Math.random() * 20}px;transition:transform ${1.5 + Math.random()}s ease-in,opacity 2.5s`;
+    box.append(s);
+    requestAnimationFrame(() => requestAnimationFrame(() => { s.style.transform = `translateY(${innerHeight + 80}px) rotate(${Math.random() * 360}deg)`; s.style.opacity = '.3'; }));
+  }
+  document.body.append(box);
+  setTimeout(() => box.remove(), 3000);
+}
+function doneBox(text, nextHash) {
+  return `<div class="done-msg">${text}<div class="row">
+    ${nextHash ? `<button class="primary" onclick="location.hash='${nextHash}'">Nächstes Blatt ▶</button>` : ''}
+    <button onclick="location.hash=''">Zur Übersicht</button></div></div>`;
+}
+
+// ================= Übersicht =================
+function home() {
+  $('title').textContent = '📄 Silben-Blätter';
+  $('back').hidden = true;
+  const tile = (key, hash, big, sub) =>
+    `<button class="sheet${done[key] ? ' done' : ''}" onclick="location.hash='${hash}'"><span class="big">${done[key] ? '✅ ' : ''}${big}</span><span class="sub">${sub}</span></button>`;
+  view.innerHTML = `
+    <h2>🟦 Silbenteppich <span class="muted">– Silben lesen und antippen</span></h2>
+    <div class="sheets">${TEPPICHE.map((t, i) => tile('t' + i, 't' + (i + 1), 'Blatt ' + (i + 1), t.name)).join('')}</div>
+    <h2>🧩 Silbenpuzzle <span class="muted">– Wörter aus Silben legen</span></h2>
+    <div class="sheets">${PUZZLES.map((p, i) => tile('p' + i, 'p' + (i + 1), 'Blatt ' + (i + 1), p.stufe + ' · ' + p.words.map(w => w.e).join(''))).join('')}</div>
+    <p class="muted" style="margin-top:24px">Fertige Blätter bekommen einen grünen Haken. Alles bleibt auf diesem Gerät gespeichert.
+      <button style="min-height:40px;padding:6px 12px;font-size:.95rem" onclick="if(confirm('Alle Haken löschen?')){localStorage.removeItem('blatt-done');location.reload()}">Haken zurücksetzen</button></p>`;
+}
+
+// ================= Silbenteppich =================
+function teppich(n) {
+  const t = TEPPICHE[n];
+  let grid = t.rows;
+  if (t.mix) {  // Mix-Blätter: Silben aus mehreren Teppichen, zufällig gemischt, 5 pro Reihe
+    const all = shuffle(t.mix.flatMap(i => TEPPICHE[i].rows.flat())).slice(0, 30);
+    grid = []; for (let i = 0; i < all.length; i += 5) grid.push(all.slice(i, i + 5));
+  }
+  const cols = grid[0].length;
+  let cells = grid.flatMap((r, ri) => r.map((s, ci) => ({ s, c: ri + ci, read: false })));
+  $('title').textContent = `🟦 Silbenteppich – Blatt ${n + 1}`;
+  $('back').hidden = false;
+  function render() {
+    const count = cells.filter(c => c.read).length;
+    view.innerHTML = `
+      <p class="task">Lies jede Silbe laut vor. Dann tippe sie an – sie wird grün. Lies erst quer ➡, dann von oben nach unten ⬇.</p>
+      <div class="bar">
+        <button id="mix">🔀 Durcheinander</button>
+        <button id="reset">↺ Von vorn</button>
+        <span class="count">${count} von ${cells.length} ✓</span>
+      </div>
+      <div class="teppich" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">
+        ${cells.map((c, i) => `<button class="feld${c.read ? ' read' : ''}" data-i="${i}">${syl(c.s, c.c)}</button>`).join('')}
+      </div>
+      <div id="fin"></div>`;
+    view.querySelectorAll('.feld').forEach(b => b.onclick = () => {
+      const c = cells[+b.dataset.i];
+      c.read = !c.read;   // nochmal tippen nimmt es zurück
+      const wasDone = cells.every(x => x.read);
+      render();
+      if (wasDone) {
+        markDone('t' + n); confetti();
+        $('fin').innerHTML = doneBox('🎉 Super! Du hast alle Silben gelesen!', n + 1 < TEPPICHE.length ? 't' + (n + 2) : 'p1');
+      }
+    });
+    $('mix').onclick = () => { cells = shuffle(cells).map((c, i) => ({ ...c, c: Math.floor(i / cols) + (i % cols) })); render(); };
+    $('reset').onclick = () => { cells.forEach(c => c.read = false); render(); };
+  }
+  render();
+}
+
+// ================= Silbenpuzzle =================
+function puzzle(n) {
+  const p = PUZZLES[n];
+  $('title').textContent = `🧩 Silbenpuzzle – Blatt ${n + 1}`;
+  $('back').hidden = false;
+  let id = 0;
+  const cards = shuffle(p.words.flatMap(w => w.s.map((s, k) => ({ id: id++, s, k, used: false }))));
+  const rows = p.words.map(w => ({ w, slots: w.s.map(() => null), solved: false, wrong: [] }));
+  let active = 0;
+  function render() {
+    const solved = rows.filter(r => r.solved).length;
+    view.innerHTML = `
+      <p class="task">Tippe eine Zeile an. Dann tippe die Silben in der richtigen Reihenfolge an. Lies das Wort leise mit.
+        <span class="muted">Falsche Silbe gelegt? Tippe sie an, dann geht sie zurück.</span></p>
+      <div class="bar"><span class="count">${solved} von ${rows.length} Wörtern ✓</span></div>
+      <div class="rows">${rows.map((r, ri) => `
+        <div class="prow${r.solved ? ' solved' : ri === active ? ' active' : ''}" data-r="${ri}">
+          <div class="pic">${r.w.e}</div>
+          ${r.solved
+            ? `<div class="solvedword">${r.w.s.map((s, k) => syl(s, k, true)).join('')}</div>`
+            : `<div class="pslots">${r.slots.map((c, k) => `<button class="pslot${c ? ` filled c${k % 2}` : ''}${r.wrong.includes(k) ? ' wrong' : ''}" data-r="${ri}" data-k="${k}">${c ? c.s : ''}</button>`).join('')}</div>`}
+        </div>`).join('')}
+      </div>
+      <div id="fin"></div>
+      ${solved < rows.length ? `<div class="pool">${cards.filter(c => !c.used).map(c => `<button class="karte c${c.k % 2}" data-id="${c.id}">${c.s}</button>`).join('')}</div>` : ''}`;
+
+    view.querySelectorAll('.prow').forEach(el => el.onclick = () => {
+      const ri = +el.dataset.r;
+      if (!rows[ri].solved) { active = ri; render(); }
+    });
+    view.querySelectorAll('.pslot').forEach(el => el.onclick = e => {
+      e.stopPropagation();
+      const r = rows[+el.dataset.r], k = +el.dataset.k;
+      active = +el.dataset.r;
+      if (r.slots[k]) { r.slots[k].used = false; r.slots[k] = null; }
+      r.wrong = [];
+      render();
+    });
+    view.querySelectorAll('.karte').forEach(el => el.onclick = () => place(cards.find(c => c.id === +el.dataset.id)));
+    if (solved === rows.length) {
+      $('fin').innerHTML = doneBox('🎉 Toll! Alle Wörter sind fertig!', n + 1 < PUZZLES.length ? 'p' + (n + 2) : '');
+    }
+  }
+  function place(card) {
+    if (rows[active].solved) active = rows.findIndex(r => !r.solved);
+    const r = rows[active];
+    const free = r.slots.indexOf(null);
+    if (free < 0) return;
+    card.used = true; r.slots[free] = card; r.wrong = [];
+    if (r.slots.every(Boolean)) {
+      // Gleich lautende Silben (z. B. zweimal »ma«) sind austauschbar: es zählt der Text.
+      r.wrong = r.slots.map((c, k) => c.s === r.w.s[k] ? -1 : k).filter(k => k >= 0);
+      if (!r.wrong.length) {
+        r.solved = true;
+        const next = rows.findIndex(x => !x.solved);
+        if (next >= 0) active = next;
+        else { markDone('p' + n); confetti(); }
+      } else {
+        render();
+        // Falsche Silben gehen nach kurzer Zeit zurück, richtige bleiben liegen.
+        setTimeout(() => {
+          r.wrong.forEach(k => { if (r.slots[k]) { r.slots[k].used = false; r.slots[k] = null; } });
+          r.wrong = []; render();
+        }, 900);
+        return;
+      }
+    }
+    render();
+  }
+  render();
+}
+
+// ================= Navigation =================
+function route() {
+  const m = location.hash.match(/^#([tp])(\d+)$/);
+  window.scrollTo(0, 0);
+  document.querySelectorAll('.confetti').forEach(c => c.remove());
+  if (m && m[1] === 't' && TEPPICHE[m[2] - 1]) return teppich(m[2] - 1);
+  if (m && m[1] === 'p' && PUZZLES[m[2] - 1]) return puzzle(m[2] - 1);
+  home();
+}
+$('back').onclick = () => { location.hash = ''; };
+addEventListener('hashchange', route);
+route();
+if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
