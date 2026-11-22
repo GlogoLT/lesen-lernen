@@ -150,6 +150,8 @@
 //  - Den grünen Haken gibt es nur für ein fehlerfreies Blatt; mit Fehlern kommt es neu gemischt noch einmal.
 //  - Nach einem Fehler ist das Wort kurz gesperrt, die Silben werden nacheinander markiert („lies laut“).
 
+const APP_VERSION = 10;   // gleich halten mit CACHE in sw.js
+
 // ================= Daten =================
 // Silbenteppiche werden aus den bekannten Buchstaben gebaut (Einstellung auf der Übersicht):
 // je 4 bekannte Mitlaute × bekannte Selbstlaute, dazu au/ei/eu, umgekehrte Silben (Am, Im …) und Mix.
@@ -380,7 +382,8 @@ function home() {
     <div class="sheets">${ps.length ? ps.map((p, i) => tile('p:' + p.words.map(w => w.w).join(','), 'p' + (i + 1), 'Blatt ' + (i + 1), p.stufe + ' · ' + p.words.map(w => w.e).join(''))).join('') : none}</div>
     <p class="muted" style="margin-top:24px">✅ gibt es nur für Blätter ohne Fehler. Mit Fehlern kommt das Blatt neu gemischt noch einmal.
       Alles bleibt auf diesem Gerät gespeichert.
-      <button style="min-height:40px;padding:6px 12px;font-size:.95rem" onclick="if(confirm('Alle Haken löschen?')){localStorage.removeItem('blatt-done');location.reload()}">Haken zurücksetzen</button></p>`;
+      <button style="min-height:40px;padding:6px 12px;font-size:.95rem" onclick="if(confirm('Alle Haken löschen?')){localStorage.removeItem('blatt-done');location.reload()}">Haken zurücksetzen</button></p>
+    <p class="muted" style="text-align:center;margin-top:30px">Version ${APP_VERSION}</p>`;
   view.querySelectorAll('.letter').forEach(b => b.onclick = () => {
     const l = b.dataset.l;
     known.has(l) ? known.delete(l) : known.add(l);
