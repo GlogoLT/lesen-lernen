@@ -121,6 +121,13 @@
   .choice.good { background: var(--okbg); border-color: var(--ok); }
   .choice.bad { background: var(--badbg); border-color: var(--bad); }
 
+  .feld.wordcell { font-size: clamp(1.7rem, 5vw, 2.5rem); padding-bottom: 14px; }
+  .modebar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .modebar button { min-height: 46px; padding: 6px 14px; font-size: 1rem; }
+  .robot { display: flex; justify-content: center; margin: 6px 0 22px; }
+  .robot button { font-size: 1.6rem; min-width: 300px; min-height: 90px; }
+  .rutsche { display: flex; justify-content: center; align-items: baseline; font-size: clamp(3rem, 10vw, 4.8rem); font-weight: 700;
+             margin: 20px 0 40px; transition: gap .9s ease; flex-wrap: nowrap; }
   .done-msg { text-align: center; font-size: 1.5rem; font-weight: 700; margin: 18px 0; }
   .done-msg.ok { color: var(--ok); } .done-msg.warn { color: var(--warn); }
   .done-msg .row { display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
@@ -346,13 +353,23 @@ function home() {
   $('back').hidden = true;
   const tile = (key, hash, big, sub, extra = '') =>
     `<button class="sheet${done[key] ? ' done' : ''}" onclick="location.hash='${hash}'"><span class="big">${done[key] ? '✅ ' : ''}${big}</span><span class="sub">${sub}${extra}</span></button>`;
-  const vs = vSheets(), ts = tSheets(), ps = pSheets();
+  const vs = vSheets(), ts = tSheets(), ps = pSheets(), rs = rSheets(), ss = sSheets(), qs = qSheets();
+  const wkey = ws => ws.map(w => w.w).join(',');
   const vkey = ws => ws.map(w => w.w).join(',');
   const none = '<p class="muted">Zu wenige Wörter – bitte mehr Buchstaben einschalten.</p>';
   view.innerHTML = `
     <div class="panel"><b>Buchstaben, die mein Kind schon kennt</b> <span class="muted">(antippen zum An- und Ausschalten – gilt für alle Blätter)</span>
       <div class="letters">${LETTERS.map(l => `<button class="letter${known.has(l) ? ' on' : ''}" data-l="${l}">${l[0] + l.slice(1).toLowerCase()}</button>`).join('')}</div>
       <span class="muted">${V_WORDS.filter(readable).length} passende Wörter</span></div>
+    <h2>🧠 Zusammenziehen üben</h2>
+    <p class="muted" style="margin:-4px 0 10px">Für Kinder, die Silben einzeln lesen können, beim Zusammenziehen aber raten.</p>
+    <h2>🤖 Robotersprache <span class="muted">– nur hören, ohne Lesen</span></h2>
+    <div class="sheets">${'speechSynthesis' in window ? rs.map((ws, i) => tile('r:' + wkey(ws), 'r' + (i + 1), 'Blatt ' + (i + 1), ws.map(w => w.e).join(''))).join('') : '<p class="muted">Dieses Gerät kann nicht vorlesen.</p>'}</div>
+    <h2>🛝 Silben-Rutsche <span class="muted">– lesen, schneller lesen, zusammen</span></h2>
+    <div class="sheets">${ss.length ? ss.map((ws, i) => tile('s:' + wkey(ws), 's' + (i + 1), 'Blatt ' + (i + 1), ws.map(w => w.e).join(''))).join('') : none}</div>
+    <h2>🤪 Quatschwörter <span class="muted">– hier kann man nicht raten</span></h2>
+    <div class="sheets">${qs.length ? qs.map((t, i) => tile('q:' + t.name, 'q' + (i + 1), 'Blatt ' + (i + 1), t.name)).join('') : none}</div>
+    <h2 style="margin-top:34px">📚 Weitere Blätter</h2>
     <h2>🖼️ Welches Bild passt? <span class="muted">– ein Wort, vier Bilder</span></h2>
     <div class="sheets">${vs.length ? vs.map((ws, i) => tile('b:' + vkey(ws), 'b' + (i + 1), 'Blatt ' + (i + 1), ws.map(w => w.e).join(''))).join('') : none}</div>
     <h2>🔗 Wörter und Bilder verbinden <span class="muted">– 5 Wörter, 8 Bilder</span></h2>
@@ -375,30 +392,32 @@ function home() {
 // ================= Silbenteppich =================
 // Modus „Erwachsener“: Das Kind liest vor, nur ein Erwachsener markiert (langer Druck) das Feld als richtig.
 // Modus „Hörauftrag“: Das Tablet spricht eine Silbe, das Kind sucht sie. Nach 2 Fehlern wird neu gemischt.
-function teppich(n) {
-  const all = tSheets(), t = all[n];
+function teppich(n, kind = 't') {
+  const all = kind === 'q' ? qSheets() : tSheets(), t = all[n];
   if (!t) { location.hash = ''; return; }
-  const cols = t.cols, tkey = 't:' + t.name, hkey = 'th:' + t.name;
-  const nextT = n + 1 < all.length ? 't' + (n + 2) : '';
+  const cols = t.cols, tkey = kind + ':' + t.name, hkey = 'th:' + t.name;
+  const nextT = n + 1 < all.length ? kind + (n + 2) : '';
   let cells = (t.mix ? shuffle(t.mix).slice(0, 30) : t.cells).map((s, i) => ({ s, c: Math.floor(i / cols) + (i % cols), read: false }));
   let mode = store().get('teppich-mode', 'adult');
-  const canSpeak = 'speechSynthesis' in window;
+  const canSpeak = 'speechSynthesis' in window && !t.words;
   if (!canSpeak) mode = 'adult';
   // Hörauftrag-Zustand
   let order = [], target = null, errors = 0, errSinceMix = 0, totalErr = 0, started = false;
-  $('title').textContent = `🟦 Silbenteppich – Blatt ${n + 1}`;
+  $('title').textContent = t.words ? `🤪 Quatschwörter – Blatt ${n + 1}` : `🟦 Silbenteppich – Blatt ${n + 1}`;
   $('back').hidden = false;
 
   function recolor() { cells = cells.map((c, i) => ({ ...c, c: Math.floor(i / cols) + (i % cols) })); }
   function render(msg = '', cls = '') {
     const count = cells.filter(c => c.read).length;
-    const task = mode === 'adult'
+    const task = t.words
+      ? 'Lies jedes Quatschwort laut einem Erwachsenen vor: erst Silbe für Silbe, dann schnell zusammen. <b>Der Erwachsene</b> drückt lange auf das Feld, wenn es richtig zusammengezogen war. Raten geht hier nicht – die Wörter gibt es gar nicht! 😄'
+      : mode === 'adult'
       ? 'Lies jede Silbe laut einem Erwachsenen vor. <b>Der Erwachsene</b> drückt lange auf das Feld, wenn es richtig war – dann wird es grün.'
       : 'Hör genau hin: Das Tablet sagt eine Silbe. Tippe die richtige Silbe an. <b>🔊</b> spielt sie nochmal.';
     view.innerHTML = `
       <div class="bar">
         <button id="m-adult" class="${mode === 'adult' ? 'on' : ''}">👩 Mit Erwachsenem</button>
-        <button id="m-hear" class="${mode === 'hear' ? 'on' : ''}"${canSpeak ? '' : ' disabled'}>👂 Hörauftrag</button>
+        ${t.words ? '' : `<button id="m-hear" class="${mode === 'hear' ? 'on' : ''}"${canSpeak ? '' : ' disabled'}>👂 Hörauftrag</button>`}
         <span class="count">${count} von ${cells.length} ✓</span>
       </div>
       <p class="task">${task}</p>
@@ -409,11 +428,11 @@ function teppich(n) {
       </div>
       <div class="msg ${cls}" id="tmsg">${msg}</div>
       <div class="teppich" id="tep" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">
-        ${cells.map((c, i) => `<button class="feld${c.read ? ' read' : ''}" data-i="${i}"><span class="ring"></span>${syl(c.s, c.c)}</button>`).join('')}
+        ${cells.map((c, i) => `<button class="feld${c.read ? ' read' : ''}${t.words ? ' wordcell' : ''}" data-i="${i}"><span class="ring"></span>${t.words ? c.s.split('-').map((x, k) => syl(x, k, true)).join('') : syl(c.s, c.c)}</button>`).join('')}
       </div>
       <div id="fin"></div>`;
     $('m-adult').onclick = () => { mode = 'adult'; store().set('teppich-mode', mode); reset(); };
-    $('m-hear').onclick = () => { mode = 'hear'; store().set('teppich-mode', mode); reset(); };
+    if ($('m-hear')) $('m-hear').onclick = () => { mode = 'hear'; store().set('teppich-mode', mode); reset(); };
     if (mode === 'adult') bindAdult(); else bindHear();
   }
   function reset() { cells.forEach(c => c.read = false); order = []; target = null; started = false; totalErr = 0; errSinceMix = 0; render(); }
@@ -740,17 +759,198 @@ function bild(n) {
   init();
 }
 
+// ================= Zusammenziehen üben =================
+// Echte Wörter in Kleinbuchstaben (damit Quatschwörter keine echten Wörter sind)
+const REAL = new Set([...V_WORDS, ...P_WORDS].map(w => w.w.toLowerCase()));
+const BLOCK = new Set(['popo', 'kaka', 'kake', 'pipi', 'pise', 'nazi', 'mist', 'schese', 'schise', 'schiese', 'arsch', 'fotz', 'hure', 'wixe']);
+// Quatschwörter aus bekannten Buchstaben: Blatt 1 nur die ersten 4 Mitlaute, Blatt 2 alle, Blatt 3 drei Silben.
+let qCache = null, qKey = '';
+function qSheets() {
+  const key = [...known].sort().join();
+  if (qCache && qKey === key) return qCache;   // innerhalb einer Sitzung gleich bleiben
+  const kc = T_CONS.filter(c => known.has(c.toUpperCase()));
+  const kv = ['a', 'e', 'i', 'o', 'u'].filter(v => known.has(v.toUpperCase()));
+  const make = (cons, nSyl, count) => {
+    const syls = cons.flatMap(c => kv.map(v => c.toLowerCase() + v));
+    const out = new Set();
+    for (let t = 0; t < 2000 && out.size < count; t++) {
+      const parts = Array.from({ length: nSyl }, () => syls[Math.floor(Math.random() * syls.length)]);
+      if (new Set(parts).size < nSyl) continue;
+      const w = parts.join('');
+      if (REAL.has(w) || [...BLOCK].some(b => w.includes(b))) continue;
+      out.add(cap(parts.join('-')));
+    }
+    return [...out];
+  };
+  const sheets = [];
+  if (kc.length >= 2 && kv.length >= 2) {
+    sheets.push({ name: 'leicht', words: true, cols: 3, cells: make(kc.slice(0, 4), 2, 12) });
+    if (kc.length > 4) sheets.push({ name: 'alle Buchstaben', words: true, cols: 3, cells: make(kc, 2, 12) });
+    sheets.push({ name: '3 Silben', words: true, cols: 2, cells: make(kc, 3, 10) });
+  }
+  qCache = sheets; qKey = key;
+  return sheets;
+}
+
+// Mehrsilbige Wörter für Robotersprache (alle Wörter – es wird nur gehört) und Silben-Rutsche (nur lesbare).
+function chunk(list, n) {
+  const out = [];
+  for (let i = 0; i < list.length; i += n) out.push(list.slice(i, i + n));
+  if (out.length > 1 && out[out.length - 1].length < 3) out[out.length - 2].push(...out.pop());
+  return out;
+}
+const multi = list => list.filter(w => w.s.length > 1).sort((a, b) => a.s.length - b.s.length || a.w.length - b.w.length);
+const rSheets = () => chunk(multi(V_WORDS), 6);
+const sSheets = () => chunk(multi(P_WORDS.filter(readable)), 5);
+
+// Silben einzeln mit Pause sprechen (Robotersprache). Gibt ein Abbruch-Token zurück.
+let speakToken = 0;
+function sayParts(parts, gap, done) {
+  if (!('speechSynthesis' in window)) return;
+  const my = ++speakToken;
+  speechSynthesis.cancel();
+  const voice = speechSynthesis.getVoices().find(v => /^de/i.test(v.lang));
+  let i = 0;
+  const next = () => {
+    if (my !== speakToken) return;
+    if (i >= parts.length) { done && done(); return; }
+    const u = new SpeechSynthesisUtterance(parts[i++]);
+    u.lang = 'de-DE'; u.rate = 0.8; if (voice) u.voice = voice;
+    let fired = false;
+    const go = () => { if (fired) return; fired = true; later(next, gap); };
+    u.onend = go;
+    later(go, 1600);   // falls das Tablet „fertig“ nicht meldet
+    speechSynthesis.speak(u);
+  };
+  next();
+}
+
+// ---- 🤖 Robotersprache: Tablet spricht „Ro … se“, Kind tippt das passende Bild.
+function robot(n) {
+  const all = rSheets(), words = all[n];
+  if (!words) { location.hash = ''; return; }
+  const key = 'r:' + words.map(w => w.w).join(',');
+  $('title').textContent = `🤖 Robotersprache – Blatt ${n + 1}`;
+  $('back').hidden = false;
+  const GAPS = { kurz: 350, mittel: 800, lang: 1400 };
+  let gapName = store().get('robot-gap', 'mittel');
+  let queue, errors, cur, missed, opts, heard;
+  function init() { queue = shuffle(words); errors = 0; missed = new Set(); next(); }
+  const speak = () => { heard = true; sayParts(cur.s.map(s => s.toLowerCase()), GAPS[gapName]); };
+  function next() {
+    if (!queue.length) {
+      view.innerHTML = '<div id="fin"></div>';
+      return finish($('fin'), errors, key, n + 1 < all.length ? 'r' + (n + 2) : '', init);
+    }
+    cur = queue.shift(); heard = false;
+    opts = shuffle([cur, ...shuffle(distractors([cur], 5)).slice(0, 3)]);
+    render();
+  }
+  function render() {
+    const doneCount = words.length - queue.length - 1;
+    view.innerHTML = `
+      <p class="task">Der Roboter spricht ein Wort in Silben – mit Pausen. Hör gut zu und zieh die Silben im Kopf zusammen.
+        Welches Bild ist es?</p>
+      <div class="bar"><div class="modebar"><span class="muted">Pause:</span>
+        ${Object.keys(GAPS).map(g => `<button data-gap="${g}" class="${g === gapName ? 'on' : ''}">${g}</button>`).join('')}</div>
+        <span class="muted">Fehler: ${errors}</span><span class="count">${doneCount} von ${words.length} ✓</span></div>
+      <div class="robot"><button class="primary" id="play">🤖 ${heard ? 'Nochmal hören' : 'Hören'}</button></div>
+      <div class="choices${heard ? '' : ' locked'}" id="ch" style="${heard ? '' : 'opacity:.45'}">${opts.map((o, i) => `<button class="choice" data-i="${i}">${o.e}</button>`).join('')}</div>
+      <div class="msg" id="bmsg"></div>`;
+    view.querySelectorAll('[data-gap]').forEach(b => b.onclick = () => { gapName = b.dataset.gap; store().set('robot-gap', gapName); render(); });
+    $('play').onclick = () => { const first = !heard; speak(); if (first) render(); };
+    view.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+      const o = opts[+b.dataset.i];
+      $('ch').classList.add('locked');
+      if (o === cur) {
+        b.classList.add('good');
+        $('bmsg').className = 'msg ok'; $('bmsg').textContent = `✅ Richtig: ${cur.w}!`;
+        speakToken++; say(cur.w);   // das Wort einmal „normal“ hören
+        later(next, 1800);
+        return;
+      }
+      errors++;
+      b.classList.add('bad', 'shake');
+      if (!missed.has(cur)) { missed.add(cur); queue.push(cur); }
+      $('bmsg').className = 'msg bad'; $('bmsg').textContent = '❌ Nicht ganz. Hör nochmal genau hin …';
+      later(() => { b.classList.remove('shake'); $('ch').classList.remove('locked'); $('bmsg').className = 'msg warn'; $('bmsg').textContent = 'Welches Bild?'; speak(); }, 2500);
+    });
+  }
+  init();
+}
+
+// ---- 🛝 Silben-Rutsche: Silben stehen weit auseinander und rutschen bei jedem Lesen näher zusammen.
+// Erst wenn sie zusammen sind, kommen die Bilder. Falsch → zurück zum Anfang, nochmal langsam lesen.
+function rutsche(n) {
+  const all = sSheets(), words = all[n];
+  if (!words) { location.hash = ''; return; }
+  const key = 's:' + words.map(w => w.w).join(',');
+  $('title').textContent = `🛝 Silben-Rutsche – Blatt ${n + 1}`;
+  $('back').hidden = false;
+  const STEPS = ['2.2em', '1.1em', '.45em', '0em'];
+  const SAY = ['Lies Silbe für Silbe.', 'Nochmal – etwas schneller!', 'Noch schneller!', 'Jetzt ganz zusammen – wie heißt das Wort?'];
+  let queue, errors, cur, missed, step;
+  function init() { queue = shuffle(words); errors = 0; missed = new Set(); next(); }
+  function next() {
+    if (!queue.length) {
+      view.innerHTML = '<div id="fin"></div>';
+      return finish($('fin'), errors, key, n + 1 < all.length ? 's' + (n + 2) : '', init);
+    }
+    cur = queue.shift(); step = 0; render();
+  }
+  function render() {
+    const doneCount = words.length - queue.length - 1;
+    const last = step === STEPS.length - 1;
+    const opts = last ? shuffle([cur, ...shuffle(distractors([cur], 5)).slice(0, 3)]) : [];
+    view.innerHTML = `
+      <p class="task">Lies laut. Bei jedem Tippen rutschen die Silben näher zusammen – lies jedes Mal schneller.
+        Am Ende: Welches Bild passt?</p>
+      <div class="bar"><span class="muted">Fehler: ${errors}</span><span class="count">${doneCount} von ${words.length} ✓</span></div>
+      <div class="rutsche" id="ru" style="gap:${STEPS[Math.max(0, step - 1)]}">${cur.s.map((s, k) => syl(s, k, true)).join('')}</div>
+      <div class="msg warn" id="bmsg">${SAY[step]}</div>
+      ${last
+        ? `<div class="choices" id="ch">${opts.map((o, i) => `<button class="choice" data-i="${i}">${o.e}</button>`).join('')}</div>`
+        : `<div class="checkrow"><button class="primary" id="go" disabled>👉 Gelesen – näher zusammen</button></div>`}`;
+    requestAnimationFrame(() => requestAnimationFrame(() => { if ($('ru')) $('ru').style.gap = STEPS[step]; }));
+    if (!last) {
+      later(() => { if ($('go')) $('go').disabled = false; }, 1500);   // erst lesen, dann tippen
+      $('go').onclick = () => { step++; render(); };
+      return;
+    }
+    view.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+      const o = opts[+b.dataset.i];
+      $('ch').classList.add('locked');
+      if (o === cur) {
+        b.classList.add('good');
+        $('bmsg').className = 'msg ok'; $('bmsg').textContent = `✅ Richtig: ${cur.w}!`;
+        later(next, 1200);
+        return;
+      }
+      errors++;
+      b.classList.add('bad', 'shake');
+      if (!missed.has(cur)) { missed.add(cur); queue.push(cur); }
+      $('bmsg').className = 'msg bad'; $('bmsg').textContent = '❌ Nicht ganz. Wir lesen nochmal von vorn – Silbe für Silbe.';
+      later(() => { step = 0; render(); }, 2200);
+    });
+  }
+  init();
+}
+
 // ================= Navigation =================
 function route() {
   timers.forEach(t => { clearTimeout(t); clearInterval(t); }); timers = [];
+  speakToken++;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
-  const m = location.hash.match(/^#([tpvb])(\d+)$/);
+  const m = location.hash.match(/^#([tpvbrsq])(\d+)$/);
   window.scrollTo(0, 0);
   document.querySelectorAll('.confetti').forEach(c => c.remove());
   if (m && m[1] === 't') return teppich(m[2] - 1);
   if (m && m[1] === 'p') return puzzle(m[2] - 1);
   if (m && m[1] === 'v') return verbinden(m[2] - 1);
   if (m && m[1] === 'b') return bild(m[2] - 1);
+  if (m && m[1] === 'r') return robot(m[2] - 1);
+  if (m && m[1] === 's') return rutsche(m[2] - 1);
+  if (m && m[1] === 'q') return teppich(m[2] - 1, 'q');
   home();
 }
 $('back').onclick = () => { location.hash = ''; };
